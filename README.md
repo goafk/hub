@@ -73,13 +73,12 @@ More in the [docs](https://goafk.dev/docs/).
 
 ## How it works
 
-```
-   Zed  ⇄  afk relay  ⇄  your agents (Claude, Codex, …)
-               │
-           afk hub  (on your computer)
-               │
-        your phone, over Wi-Fi or Tailscale
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/how-it-works-dark.svg">
+    <img alt="How afk works: Zed, the afk relay and your agents run on your computer together with the afk hub. Your phone connects to the hub over Wi-Fi or Tailscale, encrypted." src="assets/readme/how-it-works-light.svg" width="760">
+  </picture>
+</p>
 
 Zed talks to its agents over an open protocol (ACP). afk listens in on that conversation, so your
 phone sees exactly what Zed sees, and can do what Zed does. There's no fork of Zed and nothing to

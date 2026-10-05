@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="440" viewBox="0 0 860 440" role="img" aria-label="How afk works: Zed, the afk relay and your agents run on your computer with the afk hub; your phone connects to the hub over Wi-Fi or Tailscale.">
+<title>How afk works</title>
+<rect x="20" y="20" width="820" height="276" rx="18" fill="#15171A" stroke="#444950" stroke-dasharray="5 5"/>
+<circle cx="46" cy="47" r="4" fill="#8C929A"/><text x="58" y="51.5" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#A8ABB0">Your computer</text>
+<rect x="52" y="78" width="206" height="68" rx="12" fill="#1A1C1F" stroke="#2A2D31"/>
+<text x="155.0" y="108" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF">Zed</text>
+<text x="155.0" y="128" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#A8ABB0">your editor, unchanged</text>
+<rect x="327" y="78" width="206" height="68" rx="12" fill="#FFFFFF" stroke="#FFFFFF"/>
+<text x="430.0" y="108" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#111315">afk relay</text>
+<text x="430.0" y="128" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#666C74">mirrors every message</text>
+<rect x="602" y="78" width="206" height="68" rx="12" fill="#1A1C1F" stroke="#2A2D31"/>
+<text x="705.0" y="108" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF">Your agents</text>
+<text x="705.0" y="128" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#A8ABB0">Claude, Codex, …</text>
+<line x1="258" y1="112" x2="327" y2="112" stroke="#666C74" stroke-width="1.5"/>
+<path d="M265 107.5 L258 112 L265 116.5" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M320 107.5 L327 112 L320 116.5" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="292.5" y="102" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#A8ABB0">ACP</text>
+<line x1="533" y1="112" x2="602" y2="112" stroke="#666C74" stroke-width="1.5"/>
+<path d="M540 107.5 L533 112 L540 116.5" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M595 107.5 L602 112 L595 116.5" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="567.5" y="102" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#A8ABB0">ACP</text>
+<line x1="430" y1="146" x2="430" y2="200" stroke="#666C74" stroke-width="1.5"/>
+<path d="M425.5 153 L430 146 L434.5 153" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M425.5 193 L430 200 L434.5 193" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="327" y="200" width="206" height="68" rx="12" fill="#FFFFFF" stroke="#FFFFFF"/>
+<text x="430.0" y="230" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#111315">afk hub</text>
+<text x="430.0" y="250" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#666C74">history · sync · notifications</text>
+<line x1="430" y1="268" x2="430" y2="346" stroke="#666C74" stroke-width="1.5"/>
+<path d="M425.5 275 L430 268 L434.5 275" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M425.5 339 L430 346 L434.5 339" fill="none" stroke="#666C74" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="430" cy="307.0" r="6" fill="#8C929A" stroke="#0d1117" stroke-width="3"/>
+<text x="446" y="311.0" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#A8ABB0">Wi-Fi or Tailscale · encrypted</text>
+<rect x="327" y="346" width="206" height="68" rx="12" fill="#1A1C1F" stroke="#2A2D31"/>
+<text x="430.0" y="376" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF">afk app</text>
+<text x="430.0" y="396" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12.5" fill="#A8ABB0">on your phone</text>
+</svg>

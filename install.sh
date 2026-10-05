@@ -75,7 +75,10 @@ else
     CLONE="$(mktemp -d)"
     if [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v git >/dev/null 2>&1 \
       && GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git clone -q --depth 1 git@github.com:goafk/hub.git "$CLONE/hub-main" 2>/dev/null; then
-      tar -czf "$TGZ" -C "$CLONE" --exclude .git hub-main
+      # Use the clone directly (no re-packing, which makes macOS tar complain about file metadata).
+      rm -rf "$CLONE/hub-main/.git" "$CLONE/hub-main/test"
+      cp -R "$CLONE/hub-main/." "$NEW/"
+      FROM_CLONE=1
       say "    (downloaded with your GitHub SSH key)"
     elif [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v gh >/dev/null 2>&1 && gh api repos/goafk/hub/tarball/main > "$TGZ" 2>/dev/null; then
       say "    (downloaded with your GitHub login)"
@@ -85,7 +88,9 @@ else
     fi
     rm -rf "$CLONE"
   fi
-  tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/test' || die "the download is not a valid archive: $URL"
+  if [ -z "${FROM_CLONE:-}" ]; then
+    tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/test' || die "the download is not a valid archive: $URL"
+  fi
   rm -f "$TGZ"
 fi
 [ -f "$NEW/src/cli.ts" ] || die "the download does not look like afk"

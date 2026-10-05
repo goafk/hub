@@ -69,7 +69,10 @@ if [ -n "$SOURCE_DIR" ]; then
   (cd "$SOURCE_DIR" && tar -cf - --exclude ./app --exclude ./node_modules --exclude ./.git --exclude ./test .) | tar -xf - -C "$NEW"
 else
   URL="${AFK_TARBALL:-${ACP_SYNC_TARBALL:-$TARBALL_DEFAULT}}"
-  curl -fsSL "$URL" | tar -xzf - -C "$NEW" --strip-components=1 --exclude '*/app' --exclude '*/test' || die "download failed: $URL"
+  TGZ="$(mktemp)"
+  curl -fsSL "$URL" -o "$TGZ" || die "could not download $URL (is the repository public?)"
+  tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/app' --exclude '*/test' || die "the download is not a valid archive: $URL"
+  rm -f "$TGZ"
 fi
 [ -f "$NEW/src/cli.ts" ] || die "the download does not look like AFK"
 rm -rf "$SRC" && mv "$NEW" "$SRC"

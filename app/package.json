@@ -53,5 +53,6 @@
     "typecheck": "tsc --noEmit",
     "postinstall": "patch-package"
   },
-  "private": true
+  "private": true,
+  "license": "MIT"
 }

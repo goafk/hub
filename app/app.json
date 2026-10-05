@@ -3,13 +3,13 @@
     "name": "AFK",
     "slug": "zed-threads",
     "scheme": "zedthreads",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "dev.acpsync.zedthreads",
+      "bundleIdentifier": "dev.goafk.app",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
@@ -19,7 +19,7 @@
       }
     },
     "android": {
-      "package": "dev.acpsync.zedthreads",
+      "package": "dev.goafk.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6E9EF",
         "foregroundImage": "./assets/android-icon-foreground.png",

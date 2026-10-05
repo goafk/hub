@@ -12,5 +12,6 @@
   },
   "scripts": {
     "test": "node --no-warnings --test test/*.test.ts"
-  }
+  },
+  "license": "MIT"
 }

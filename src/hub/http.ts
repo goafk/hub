@@ -355,7 +355,7 @@ export function startHttp(
           return send(200, { ok: true });
         }
         const t = hub.thread(parts[1]);
-        if (parts.length === 2 && m === "GET") return send(200, { ...summary(hub, t), entries: hub.interpreter.entries.get(t.id) ?? [] });
+        if (parts.length === 2 && m === "GET") return send(200, { ...summary(hub, t), phoneOnly: !!opts.meta?.get(t.id).phoneOnly, entries: hub.interpreter.entries.get(t.id) ?? [] });
         if (parts.length === 3 && m === "POST") {
           // Prompts may carry photos (base64), so they get a larger limit.
           const b = await body(req, parts[2] === "prompt" ? 30_000_000 : 1_000_000);

@@ -13,7 +13,7 @@
 #   AFK_SETUP_ARGS extra flags for setup, e.g. "--no-lan"
 set -eu
 
-TARBALL_DEFAULT="https://github.com/goafk/afk/archive/refs/heads/main.tar.gz"
+TARBALL_DEFAULT="https://github.com/goafk/hub/archive/refs/heads/main.tar.gz"
 NODE_MIN="22.18.0"
 
 say() { printf '%s\n' "$*"; }
@@ -66,7 +66,7 @@ rm -rf "$NEW" && mkdir -p "$NEW"
 SOURCE_DIR="${AFK_SOURCE:-${ACP_SYNC_SOURCE:-}}"
 if [ -n "$SOURCE_DIR" ]; then
   [ -f "$SOURCE_DIR/src/cli.ts" ] || die "AFK_SOURCE=$SOURCE_DIR is not an afk checkout"
-  (cd "$SOURCE_DIR" && tar -cf - --exclude ./app --exclude ./node_modules --exclude ./.git --exclude ./test .) | tar -xf - -C "$NEW"
+  (cd "$SOURCE_DIR" && tar -cf - --exclude ./node_modules --exclude ./.git --exclude ./test .) | tar -xf - -C "$NEW"
 else
   URL="${AFK_TARBALL:-${ACP_SYNC_TARBALL:-$TARBALL_DEFAULT}}"
   TGZ="$(mktemp)"
@@ -74,10 +74,10 @@ else
     # Private repository: fetch it with your own GitHub access instead (SSH key, or `gh auth login`).
     CLONE="$(mktemp -d)"
     if [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v git >/dev/null 2>&1 \
-      && GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git clone -q --depth 1 git@github.com:goafk/afk.git "$CLONE/afk-main" 2>/dev/null; then
-      tar -czf "$TGZ" -C "$CLONE" --exclude .git afk-main
+      && GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git clone -q --depth 1 git@github.com:goafk/hub.git "$CLONE/hub-main" 2>/dev/null; then
+      tar -czf "$TGZ" -C "$CLONE" --exclude .git hub-main
       say "    (downloaded with your GitHub SSH key)"
-    elif [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v gh >/dev/null 2>&1 && gh api repos/goafk/afk/tarball/main > "$TGZ" 2>/dev/null; then
+    elif [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v gh >/dev/null 2>&1 && gh api repos/goafk/hub/tarball/main > "$TGZ" 2>/dev/null; then
       say "    (downloaded with your GitHub login)"
     else
       rm -rf "$CLONE"
@@ -85,7 +85,7 @@ else
     fi
     rm -rf "$CLONE"
   fi
-  tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/app' --exclude '*/test' || die "the download is not a valid archive: $URL"
+  tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/test' || die "the download is not a valid archive: $URL"
   rm -f "$TGZ"
 fi
 [ -f "$NEW/src/cli.ts" ] || die "the download does not look like afk"

@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="app/assets/brand/afk-logo-dark.svg">
-    <img alt="afk" src="app/assets/brand/afk-logo.svg" width="260">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/afk-logo-dark.svg">
+    <img alt="afk" src="assets/brand/afk-logo.svg" width="260">
   </picture>
 </p>
 
-# afk
+# afk hub
 
 Two-way sync between [Zed](https://zed.dev) agent threads and a local hub, for **any ACP agent**
 Zed can run (Claude Agent, Codex, Cursor, OpenCode, Pi, …). Start a thread in Zed and the hub
@@ -83,8 +83,8 @@ Thread ids accept any unique prefix. Projects resolve from a path, `~/Herd/<name
 
 ## Mobile app
 
-`app/` is an Expo app that looks like Zed's Threads sidebar + agent panel and talks to the hub.
-See [app/README.md](app/README.md). Pair it with `afk pair` (see Install).
+The phone app lives in its own repo: [goafk/app](https://github.com/goafk/app) (Expo, Android today,
+iPhone coming). It talks to this hub; pair it with `afk pair` (see Install).
 
 ## HTTP API
 

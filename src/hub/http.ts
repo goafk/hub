@@ -23,7 +23,7 @@ import type { Notifier } from "./notify.ts";
 import type { MetaStore } from "./meta.ts";
 
 const STATUS: Record<string, number> = {
-  not_found: 404, busy: 409, outdated: 409, git_error: 422, offline: 409, invalid: 400, timeout: 504, agent_error: 502, unauthorized: 401, launch_failed: 500,
+  not_found: 404, busy: 409, outdated: 409, git_error: 422, offline: 409, invalid: 400, timeout: 504, agent_error: 502, unauthorized: 401, launch_failed: 500, locked: 409,
 };
 
 export const isLoopback = (addr?: string) => !!addr && (addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1");

@@ -198,7 +198,7 @@ export class Hub extends EventEmitter {
       };
       const timer = setTimeout(() => {
         cleanup();
-        reject(new HubError("timeout", "no new thread appeared in Zed"));
+        reject(new HubError("timeout", "Zed didn't start the thread. Check that Zed is open on your Mac and try again."));
       }, timeoutMs);
       const cleanup = () => {
         clearTimeout(timer);

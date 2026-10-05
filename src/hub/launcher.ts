@@ -57,11 +57,14 @@ export class Launcher {
   private settleMs: number;
   private chain: Promise<unknown> = Promise.resolve();
 
-  constructor(hub: Hub, cfg: () => Config, opts: { run?: Runner; timeoutMs?: number; settleMs?: number } = {}) {
+  private isLocked: () => Promise<boolean>;
+  constructor(hub: Hub, cfg: () => Config, opts: { run?: Runner; timeoutMs?: number; settleMs?: number; isLocked?: () => Promise<boolean> } = {}) {
     this.hub = hub;
     this.cfg = cfg;
     this.run = opts.run ?? execRunner;
     this.timeoutMs = opts.timeoutMs ?? 20000;
+    // With a stubbed runner (tests) the screen counts as unlocked unless a check is given.
+    this.isLocked = opts.isLocked ?? (opts.run ? async () => false : () => this.screenLocked());
     this.settleMs = opts.settleMs ?? 900;
   }
 
@@ -76,6 +79,10 @@ export class Launcher {
     const binding = cfg.bindings[agentId];
     if (!binding) throw new HubError("invalid", `agent ${agentId} is not set up (run: afk setup)`);
     if (!cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) throw new HubError("invalid", `not a directory: ${cwd}`);
+    // Zed only takes the keystrokes that start a thread on an unlocked screen: say so up front.
+    if (await this.isLocked()) {
+      throw new HubError("locked", "Your Mac's screen is locked. Unlock it to start a new thread from the phone; your existing threads keep working.");
+    }
     const target = real(cwd);
     const start = Date.now();
     const wait = this.hub.waitForThread((t) => t.agentId === agentId && t.createdAt >= start && real(t.cwd) === target, this.timeoutMs);
@@ -93,6 +100,16 @@ export class Launcher {
     const thread = await wait;
     if (prompt) await this.hub.command(thread.id, { cmd: "prompt", text: prompt });
     return thread;
+  }
+
+  /** The console session is locked (lock screen or screensaver with password). */
+  private async screenLocked(): Promise<boolean> {
+    if (process.platform !== "darwin") return false;
+    try {
+      return /"IOConsoleLocked" = Yes/.test(await this.run("ioreg", ["-n", "Root", "-d1"]));
+    } catch {
+      return false;
+    }
   }
 
   /** Runs the keystroke script inside the AcpSyncKeys applet (which holds the Accessibility grant). */

@@ -12,9 +12,9 @@ import type { Config } from "../src/config.ts";
 
 const CFG: Config = { token: "secret", hubId: "testhub", host: "127.0.0.1", port: 0, zedCli: "/bin/zed-stub", bindings: { fake: { zedName: "Fake (synced)", keys: "ctrl-alt-cmd-z a", name: "Fake" } } };
 
-async function setup(opts: { loopback?: boolean; run?: (c: string, a: string[]) => Promise<string>; timeoutMs?: number } = {}) {
+async function setup(opts: { loopback?: boolean; run?: (c: string, a: string[]) => Promise<string>; timeoutMs?: number; locked?: boolean } = {}) {
   const { hub, home } = await startHub();
-  const launcher = new Launcher(hub, () => CFG, { run: opts.run ?? (async () => ""), timeoutMs: opts.timeoutMs ?? 5000, settleMs: 1 });
+  const launcher = new Launcher(hub, () => CFG, { run: opts.run ?? (async () => ""), timeoutMs: opts.timeoutMs ?? 5000, settleMs: 1, isLocked: async () => !!opts.locked });
   const pairing = new Pairing(fs.mkdtempSync(path.join(os.tmpdir(), "acp-pair-")));
   const api = await startHttp(hub, { host: "127.0.0.1", port: 0, cfg: () => CFG, launcher, pairing, isLoopback: () => opts.loopback ?? true });
   const base = `http://127.0.0.1:${api.port}`;
@@ -310,6 +310,19 @@ test("launch times out when Zed never starts a session", async () => {
   try {
     const r = await s.call("POST", "/threads", { cwd: "/tmp", agentId: "fake" });
     assert.equal(r.status, 504);
+  } finally {
+    await s.close();
+  }
+});
+
+test("new thread: a locked Mac screen is reported right away, without pressing keys", async () => {
+  const calls: string[] = [];
+  const s = await setup({ locked: true, run: async (c) => (calls.push(c), "") });
+  try {
+    const r = await s.call("POST", "/threads", { cwd: os.tmpdir(), agentId: "fake", prompt: "hi" });
+    assert.equal(r.status, 409);
+    assert.match(r.json.error?.message ?? r.json.message ?? JSON.stringify(r.json), /locked/);
+    assert.deepEqual(calls, []);
   } finally {
     await s.close();
   }

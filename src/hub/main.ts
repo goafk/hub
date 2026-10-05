@@ -27,7 +27,7 @@ export async function runHub(): Promise<void> {
   for (const t of hub.interpreter.threads.values()) if (t.usage?.cost?.amount !== undefined) usage.seed(t.id, Number(t.usage.cost.amount));
   setInterval(() => usage.flush(), 30_000).unref();
   const pending = new PendingLaunches(path.join(p.home, "pending-launches.json"));
-  const api = await startHttp(hub, { host: cfg.host, port: cfg.port, cfg: () => loadConfig(), launcher, zed, notifier, meta, usage, pending });
+  const api = await startHttp(hub, { host: cfg.host, port: cfg.port, cfg: () => loadConfig(), launcher, zed, notifier, meta, usage, pending, adopt: (id) => adoptNow(id) });
   // Threads asked for while the Mac was locked: start them in Zed once it's unlocked.
   let starting = false;
   setInterval(async () => {
@@ -51,6 +51,37 @@ export async function runHub(): Promise<void> {
       starting = false;
     }
   }, 10_000).unref();
+  // Phone-only threads move into Zed once the Mac is unlocked and nobody is using it (so the
+  // hub bringing Zed forward never interrupts you). The app's "Move into Zed" does it on demand.
+  const adoptTries = new Map<string, number>();
+  let adopting = false;
+  const adoptNow = async (id: string) => {
+    const t = hub.interpreter.threads.get(id);
+    if (!t) return;
+    await hub.adopt(id, () => launcher.openNewThread(t.cwd, t.agentId));
+    meta.set(id, { phoneOnly: false });
+    hub.emit("event", { type: "sidebar.changed", threadId: "", data: {} });
+    log(`moved phone thread ${id} into Zed`);
+  };
+  setInterval(async () => {
+    if (adopting) return;
+    const waiting = [...hub.interpreter.threads.values()].filter((t) => meta.get(t.id).phoneOnly && t.status === "idle" && (adoptTries.get(t.id) ?? 0) < 3);
+    if (!waiting.length || (await launcher.locked()) || (await launcher.idleSeconds()) < 120) return;
+    adopting = true;
+    try {
+      for (const t of waiting) {
+        try {
+          await adoptNow(t.id);
+          notifier.message({ title: `${path.basename(t.cwd)} · now in Zed`, body: "Your phone thread is in Zed's sidebar, with its whole conversation.", threadId: t.id }).catch(() => {});
+        } catch (err: any) {
+          adoptTries.set(t.id, (adoptTries.get(t.id) ?? 0) + 1);
+          log(`moving ${t.id} into Zed failed: ${err.message}`);
+        }
+      }
+    } finally {
+      adopting = false;
+    }
+  }, 30_000).unref();
   const titleOf = (t: { id: string; title?: string }) => t.title ?? (zed.available() ? zed.thread(t.id)?.title : undefined) ?? "Thread";
   // Cost ledger + the phone's live "agent working" notification.
   const throttle = new ProgressThrottle();

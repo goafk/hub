@@ -191,6 +191,32 @@ export class Hub extends EventEmitter {
     return t;
   }
 
+  /**
+   * Moves a phone-only thread into Zed: every process of its agent waits for Zed's next new
+   * thread in that folder and answers it with this thread (the agent replays the history to Zed).
+   * `openInZed` opens that new thread in Zed. Resolves when one process has done it.
+   */
+  async adopt(threadId: string, openInZed: () => Promise<void>, timeoutMs = 60000): Promise<void> {
+    const t = this.thread(threadId);
+    const procs = [...this.conns.values()].filter((c) => c.agentId === t.agentId && (c.commands ?? []).includes("adopt"));
+    if (!procs.length) throw new HubError("outdated", "Quit and reopen Zed once so its agents pick up afk's update.");
+    // Zed reports the folder it opened by its real path.
+    let cwd = t.cwd;
+    try {
+      cwd = fs.realpathSync(t.cwd);
+    } catch {}
+    const waits = procs.map((c) => this.sendToConn(c.id, { cmd: "adopt", sessionId: t.id, cwd, timeoutMs }, timeoutMs + 5000));
+    waits.forEach((w) => w.catch(() => {}));
+    try {
+      await openInZed();
+      await Promise.any(waits);
+    } catch (e: any) {
+      throw e instanceof AggregateError ? e.errors[0] : e;
+    } finally {
+      for (const c of procs) this.sendToConn(c.id, { cmd: "adopt-cancel", cwd }).catch(() => {});
+    }
+  }
+
   agents(): Array<{ agentId: string; name: string; connections: number }> {
     const by = new Map<string, { agentId: string; name: string; connections: number }>();
     for (const c of this.conns.values()) {

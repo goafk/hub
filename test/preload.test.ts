@@ -93,3 +93,34 @@ test("phone-only thread: the hub starts a session Zed never sees; files, termina
     await hub.stop();
   }
 });
+
+test("adopt: a phone-only thread becomes Zed's next new thread in its folder, with its history replayed", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const { hub, home } = await startHub();
+  const zed = new FakeZed(home.sock, {}, true);
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afk-adopt-")));
+  try {
+    await zed.open("/proj");
+    await until(() => hub.agents().length === 1);
+    const t = await hub.startHeadless("fake", dir);
+    let opened: string | undefined;
+    // "Zed" opens a new thread in that folder once the hub asks; the relay answers it with the phone thread.
+    await hub.adopt(t.id, async () => {
+      opened = await zed.open(dir);
+    });
+    assert.equal(opened, t.id, "Zed's new thread is the phone thread");
+    // Zed got the answer first, then the replayed history for that session.
+    const iAnswer = zed.received.findIndex((m) => m.result?.sessionId === t.id);
+    const iHistory = zed.received.findIndex((m) => m.method === "session/update" && m.params.sessionId === t.id && m.params.update.content?.text === "old question");
+    assert.ok(iAnswer >= 0 && iHistory > iAnswer, `answer ${iAnswer} before history ${iHistory}`);
+    // From now on it's a normal Zed thread: a phone prompt shows up in Zed.
+    await until(() => hub.interpreter.threads.get(t.id)!.status === "idle");
+    await hub.command(t.id, { cmd: "prompt", text: "after adopt" });
+    await zed.next((m) => m.method === "session/update" && m.params.sessionId === t.id && m.params.update.content?.text === "after adopt");
+  } finally {
+    zed.kill();
+    await hub.stop();
+  }
+});

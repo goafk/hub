@@ -134,6 +134,8 @@ export function startHttp(
     meta?: MetaStore;
     usage?: UsageLedger;
     pending?: PendingLaunches;
+    /** Moves a phone-only thread into Zed now ("Move into Zed" in the app). */
+    adopt?: (threadId: string) => Promise<void>;
     pairing?: Pairing;
     isLoopback?: (addr?: string) => boolean;
   },
@@ -341,6 +343,11 @@ export function startHttp(
           }
           const t = await opts.launcher.launch({ cwd: b.cwd, agentId: b.agentId, prompt: b.prompt });
           return send(201, summary(hub, t));
+        }
+        if (parts.length === 3 && parts[2] === "adopt" && m === "POST") {
+          if (!opts.adopt) throw new HubError("not_found", "moving threads into Zed is not enabled");
+          await opts.adopt(parts[1]);
+          return send(200, { ok: true });
         }
         if (parts[1] === "pending" && parts[3] === "cancel" && m === "POST") {
           opts.pending?.remove(parts[2]);

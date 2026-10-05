@@ -32,7 +32,7 @@ export function optionValues(opt: any): string[] {
 }
 
 /** Commands this relay build understands (the hub checks before sending). */
-export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify", "hub-session"];
+export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify", "hub-session", "adopt"];
 
 export function createRelay(opts: RelayOpts): Relay {
   const timeout = opts.rpcTimeoutMs ?? 30000;
@@ -48,6 +48,10 @@ export function createRelay(opts: RelayOpts): Relay {
   const hubOwned = new Set<string>();
   const hubOwnedRequests = new Set<string | number>();
   const host = new HostClient();
+  // "Adopt" a phone-only thread into Zed: the hub opens a new thread in Zed, and the relay answers
+  // Zed's session/new for that folder by loading the phone thread instead (the agent replays it).
+  const adoptions = new Map<string, { sessionId: string; resolve: (v: unknown) => void; reject: (e: unknown) => void; timer: NodeJS.Timeout }>();
+  const norm = (p: string) => (p ?? "").replace(/\/+$/, "");
   let seq = 0;
 
   // Outbound-to-Zed queue so we can hold messages while rewriting a session/new response.
@@ -252,6 +256,28 @@ export function createRelay(opts: RelayOpts): Relay {
       }
       case "hub-session":
         return { ok: true };
+      case "adopt": {
+        // Resolves once Zed's next new thread in this folder has become the phone thread.
+        const cwd = norm(cmd.cwd);
+        adoptions.get(cwd)?.reject(Object.assign(new Error("replaced"), { code: "busy" }));
+        return new Promise((resolve, reject) => {
+          const timer = setTimeout(() => {
+            adoptions.delete(cwd);
+            reject(Object.assign(new Error("Zed didn't open a new thread in time"), { code: "timeout" }));
+          }, Number(cmd.timeoutMs) || 60000);
+          timer.unref();
+          adoptions.set(cwd, { sessionId: String(cmd.sessionId), resolve, reject, timer });
+        });
+      }
+      case "adopt-cancel": {
+        const a = adoptions.get(norm(cmd.cwd));
+        if (a) {
+          clearTimeout(a.timer);
+          adoptions.delete(norm(cmd.cwd));
+          a.reject(Object.assign(new Error("cancelled"), { code: "cancelled" }));
+        }
+        return { ok: true };
+      }
       case "notify": {
         toZed(cmd.method, cmd.params);
         return { ok: true };
@@ -262,9 +288,44 @@ export function createRelay(opts: RelayOpts): Relay {
   }
 
   // Zed -> agent
+  function adopt(m: any, a: { sessionId: string; resolve: (v: unknown) => void; reject: (e: unknown) => void }): void {
+    holding++; // hold everything Zed-bound until Zed has the session/new answer
+    hubOwned.delete(a.sessionId);
+    const p = m.params ?? {};
+    toAgent("session/load", { sessionId: a.sessionId, cwd: p.cwd, mcpServers: p.mcpServers ?? [] }).then(
+      (res) => {
+        if (res.error) {
+          // Couldn't load it: let Zed's own new session go ahead as usual.
+          fromZed.set(m.id, { method: m.method, params: m.params });
+          mirror("zed->agent", m);
+          opts.writeAgent(JSON.stringify(m));
+          release();
+          return a.reject(rpcError(res));
+        }
+        const r = res.result ?? {};
+        sessions.set(a.sessionId, { sessionId: a.sessionId, cwd: p.cwd, configOptions: r.configOptions, modes: r.modes, models: r.models });
+        const out = { jsonrpc: "2.0", id: m.id, result: { ...r, sessionId: a.sessionId } };
+        mirror("sync->zed", out);
+        opts.writeZed(JSON.stringify(out)); // first the answer, then the replayed history
+        release();
+        a.resolve({ adopted: true, sessionId: a.sessionId });
+      },
+      (e) => {
+        release();
+        a.reject(e);
+      },
+    );
+  }
+
   function fromZedLine(line: string): void {
     const m = tryParse(line);
     if (!m) return opts.writeAgent(line);
+    if (m.method === "session/new" && m.id !== undefined && adoptions.has(norm(m.params?.cwd))) {
+      const a = adoptions.get(norm(m.params?.cwd))!;
+      adoptions.delete(norm(m.params?.cwd));
+      clearTimeout(a.timer);
+      return adopt(m, a);
+    }
     if (m.method === undefined && m.id !== undefined) {
       if (answered.has(m.id)) {
         answered.delete(m.id);

@@ -87,7 +87,19 @@ export class Launcher {
     const start = Date.now();
     const wait = this.hub.waitForThread((t) => t.agentId === agentId && t.createdAt >= start && real(t.cwd) === target, this.timeoutMs);
     wait.catch(() => {});
-    await this.run(findZedCli(cfg), ["-e", target]);
+    await this.openNewThread(target, agentId);
+    const thread = await wait;
+    if (prompt) await this.hub.command(thread.id, { cmd: "prompt", text: prompt });
+    return thread;
+  }
+
+  /** Opens the folder in Zed and presses the agent's new-thread shortcut (doesn't wait for the thread). */
+  async openNewThread(cwd: string, agentId: string): Promise<void> {
+    const cfg = this.cfg();
+    const binding = cfg.bindings[agentId];
+    if (!binding) throw new HubError("invalid", `agent ${agentId} is not set up (run: afk setup)`);
+    if (await this.isLocked()) throw new HubError("locked", "Your Mac's screen is locked.");
+    await this.run(findZedCli(cfg), ["-e", real(cwd)]);
     await new Promise((r) => setTimeout(r, this.settleMs));
     const script = ['tell application "Zed" to activate', "delay 0.3", ...keystrokeScript(binding.keys)];
     try {
@@ -97,9 +109,17 @@ export class Launcher {
       const who = cfg.keyHelper ? "AcpSyncKeys" : "the process running the hub";
       throw new HubError("launch_failed", `${e.message} — allow ${who} in System Settings → Privacy & Security → Accessibility`);
     }
-    const thread = await wait;
-    if (prompt) await this.hub.command(thread.id, { cmd: "prompt", text: prompt });
-    return thread;
+  }
+
+  /** Seconds since the last keyboard/mouse input on the Mac (0 if unknown). */
+  async idleSeconds(): Promise<number> {
+    if (process.platform !== "darwin") return 0;
+    try {
+      const m = /"HIDIdleTime" = (\d+)/.exec(await this.run("ioreg", ["-c", "IOHIDSystem", "-d", "4"]));
+      return m ? Number(m[1]) / 1e9 : 0;
+    } catch {
+      return 0;
+    }
   }
 
   /** Whether the Mac's screen is locked right now (new threads can't be started in Zed then). */

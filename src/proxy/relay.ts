@@ -3,6 +3,7 @@
 // Used by the out-of-process proxy (proxy.ts) and the in-process preload (preload.ts).
 import { tryParse } from "../lines.ts";
 import { HubLink } from "./hublink.ts";
+import { HostClient } from "./hostClient.ts";
 
 export type RelayOpts = {
   agentId: string;
@@ -31,7 +32,7 @@ export function optionValues(opt: any): string[] {
 }
 
 /** Commands this relay build understands (the hub checks before sending). */
-export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify"];
+export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify", "hub-session"];
 
 export function createRelay(opts: RelayOpts): Relay {
   const timeout = opts.rpcTimeoutMs ?? 30000;
@@ -41,7 +42,12 @@ export function createRelay(opts: RelayOpts): Relay {
   const fromAgent = new Map<string | number, { method: string; params: any }>(); // agent requests awaiting Zed reply
   const answered = new Set<string | number>(); // agent requests the hub already answered
   const busy = new Map<string, number>(); // sessionId -> prompts in flight
-  const ours = new Map<string, { resolve: (m: any) => void }>();
+  const ours = new Map<string, { resolve: (m: any) => void; method: string; params: any }>();
+  // Sessions the hub started itself (from the phone, without Zed): Zed never sees their traffic;
+  // the hub/phone answers permissions and questions, and the relay serves files and terminals.
+  const hubOwned = new Set<string>();
+  const hubOwnedRequests = new Set<string | number>();
+  const host = new HostClient();
   let seq = 0;
 
   // Outbound-to-Zed queue so we can hold messages while rewriting a session/new response.
@@ -80,7 +86,7 @@ export function createRelay(opts: RelayOpts): Relay {
         reject(Object.assign(new Error(`${method} timed out`), { code: "timeout" }));
       }, method === "session/prompt" ? 24 * 3600 * 1000 : timeout);
       timer.unref();
-      ours.set(id, { resolve: (m) => { clearTimeout(timer); resolve(m); } });
+      ours.set(id, { resolve: (m) => { clearTimeout(timer); resolve(m); }, method, params });
     });
     mirror("sync->agent", msg);
     opts.writeAgent(JSON.stringify(msg));
@@ -94,6 +100,8 @@ export function createRelay(opts: RelayOpts): Relay {
   function toZed(method: string, params: any): void {
     const msg = { jsonrpc: "2.0", method, params };
     mirror("sync->zed", msg);
+    if (params?.sessionId && hubOwned.has(params.sessionId)) return;
+    if (method === "$/cancel_request" && hubOwnedRequests.delete(params?.requestId)) return;
     writeZed(JSON.stringify(msg));
   }
   const rpcError = (m: any) => Object.assign(new Error(m.error?.message ?? "agent error"), { code: "agent_error", data: m.error });
@@ -242,6 +250,8 @@ export function createRelay(opts: RelayOpts): Relay {
         }
         return res.result;
       }
+      case "hub-session":
+        return { ok: true };
       case "notify": {
         toZed(cmd.method, cmd.params);
         return { ok: true };
@@ -277,6 +287,12 @@ export function createRelay(opts: RelayOpts): Relay {
       mirror("agent->zed", m);
       const o = ours.get(m.id)!;
       ours.delete(m.id);
+      // A session the hub created: hide it from Zed before the agent's next line (its first updates).
+      if (o.method === "session/new" && m.result?.sessionId) {
+        const r = m.result;
+        sessions.set(r.sessionId, { sessionId: r.sessionId, cwd: o.params?.cwd, configOptions: r.configOptions, modes: r.modes, models: r.models });
+        hubOwned.add(r.sessionId);
+      }
       return o.resolve(m);
     }
     mirror("agent->zed", m);
@@ -284,6 +300,25 @@ export function createRelay(opts: RelayOpts): Relay {
     if (m.method === "session/update" && m.params?.update?.sessionUpdate === "available_commands_update") {
       const info = sessions.get(m.params.sessionId);
       if (info) info.availableCommands = m.params.update.availableCommands;
+    }
+    const sid = m.params?.sessionId;
+    if (sid && hubOwned.has(sid)) {
+      if (m.method === undefined) return;
+      if (m.id === undefined) return; // updates: mirrored to the hub only
+      fromAgent.set(m.id, { method: m.method, params: m.params });
+      hubOwnedRequests.add(m.id);
+      // Permissions and questions wait for the phone; files and terminals are served here.
+      if (m.method === "session/request_permission" || m.method === "elicitation/create") return;
+      host.handle(m.method, m.params).then(
+        (result) => answerAgent(m.id, result ?? null),
+        (e: any) => {
+          fromAgent.delete(m.id);
+          const err = { jsonrpc: "2.0", id: m.id, error: { code: typeof e?.code === "number" ? e.code : -32603, message: e?.message ?? String(e) } };
+          mirror("sync->agent", err);
+          opts.writeAgent(JSON.stringify(err));
+        },
+      );
+      return;
     }
     if (m.method !== undefined && m.id !== undefined) {
       fromAgent.set(m.id, { method: m.method, params: m.params });

@@ -58,3 +58,38 @@ test("resume: the hub loads a thread Zed hasn't opened into a running agent, the
     await hub.stop();
   }
 });
+
+test("phone-only thread: the hub starts a session Zed never sees; files, terminals and permissions are handled without Zed", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const { hub, home } = await startHub();
+  const zed = new FakeZed(home.sock, {}, true);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "afk-phone-"));
+  fs.writeFileSync(path.join(dir, "hello.txt"), "hi from disk");
+  try {
+    await zed.open("/proj"); // keeps the agent process running
+    await until(() => hub.agents().length === 1);
+    const seen = zed.received.length;
+    const t = await hub.startHeadless("fake", dir);
+    assert.equal(t.cwd, dir);
+    await hub.command(t.id, { cmd: "prompt", text: `FILE:${path.join(dir, "hello.txt")}` });
+    await until(() => hub.interpreter.entries.get(t.id)!.some((e) => e.text === "file:hi from disk"));
+    await until(() => hub.interpreter.threads.get(t.id)!.status === "idle");
+    await hub.command(t.id, { cmd: "prompt", text: "RUN:echo afk-ok" });
+    await until(() => hub.interpreter.entries.get(t.id)!.some((e) => e.text === "run:0:afk-ok"));
+    await until(() => hub.interpreter.threads.get(t.id)!.status === "idle");
+    await hub.command(t.id, { cmd: "prompt", text: "PERM" });
+    await until(() => hub.interpreter.threads.get(t.id)!.pendingPermissions.length === 1);
+    const req = hub.interpreter.threads.get(t.id)!.pendingPermissions[0];
+    await hub.command(t.id, { cmd: "permission", requestId: req.requestId, optionId: "allow" });
+    await until(() => hub.interpreter.entries.get(t.id)!.some((e) => e.text === "perm:allow"));
+    // Zed received nothing about this session.
+    const leaked = zed.received.slice(seen).filter((m) => JSON.stringify(m).includes(t.id));
+    assert.deepEqual(leaked, []);
+    await assert.rejects(hub.startHeadless("nobody", dir), (e: any) => e.code === "offline");
+  } finally {
+    zed.kill();
+    await hub.stop();
+  }
+});

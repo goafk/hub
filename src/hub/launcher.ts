@@ -102,6 +102,11 @@ export class Launcher {
     return thread;
   }
 
+  /** Whether the Mac's screen is locked right now (new threads can't be started in Zed then). */
+  locked(): Promise<boolean> {
+    return this.isLocked();
+  }
+
   /** The console session is locked (lock screen or screensaver with password). */
   private async screenLocked(): Promise<boolean> {
     if (process.platform !== "darwin") return false;

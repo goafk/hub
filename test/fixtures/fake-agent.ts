@@ -86,6 +86,30 @@ onLines(process.stdin, async (line) => {
         update(p.sessionId, { sessionUpdate: "agent_message_chunk", content: { type: "text", text: `ask:${resp.result?.action}:${JSON.stringify(resp.result?.content ?? {})}` } });
         return send({ id: m.id, result: { stopReason: "end_turn" } });
       }
+      // FILE:<path> asks the client to read a file; RUN:<command> runs it in a client terminal.
+      const ask = (method: string, params: any) => {
+        const id = ++reqId;
+        return new Promise<any>((r) => {
+          waiting.set(id, r);
+          send({ id, method, params: { sessionId: p.sessionId, ...params } });
+        });
+      };
+      const file = /FILE:(\S+)/.exec(text);
+      if (file) {
+        const r = await ask("fs/read_text_file", { path: file[1] });
+        update(p.sessionId, { sessionUpdate: "agent_message_chunk", content: { type: "text", text: `file:${r.result?.content ?? r.error?.message}` } });
+        return send({ id: m.id, result: { stopReason: "end_turn" } });
+      }
+      const run = /RUN:(.+)$/.exec(text);
+      if (run) {
+        const c = await ask("terminal/create", { command: run[1] });
+        const terminalId = c.result?.terminalId;
+        await ask("terminal/wait_for_exit", { terminalId });
+        const o = await ask("terminal/output", { terminalId });
+        await ask("terminal/release", { terminalId });
+        update(p.sessionId, { sessionUpdate: "agent_message_chunk", content: { type: "text", text: `run:${o.result?.exitStatus?.exitCode}:${o.result?.output?.trim()}` } });
+        return send({ id: m.id, result: { stopReason: "end_turn" } });
+      }
       if (text.includes("PERM")) {
         const id = ++reqId;
         const resp: any = await new Promise((r) => {

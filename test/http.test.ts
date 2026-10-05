@@ -8,6 +8,7 @@ import http from "node:http";
 import { FakeZed, startHub, until } from "./helpers.ts";
 import { startHttp } from "../src/hub/http.ts";
 import { Launcher, keystrokeScript } from "../src/hub/launcher.ts";
+import { PendingLaunches } from "../src/hub/pending.ts";
 import type { Config } from "../src/config.ts";
 
 const CFG: Config = { token: "secret", hubId: "testhub", host: "127.0.0.1", port: 0, zedCli: "/bin/zed-stub", bindings: { fake: { zedName: "Fake (synced)", keys: "ctrl-alt-cmd-z a", name: "Fake" } } };
@@ -16,13 +17,14 @@ async function setup(opts: { loopback?: boolean; run?: (c: string, a: string[]) 
   const { hub, home } = await startHub();
   const launcher = new Launcher(hub, () => CFG, { run: opts.run ?? (async () => ""), timeoutMs: opts.timeoutMs ?? 5000, settleMs: 1, isLocked: async () => !!opts.locked });
   const pairing = new Pairing(fs.mkdtempSync(path.join(os.tmpdir(), "acp-pair-")));
-  const api = await startHttp(hub, { host: "127.0.0.1", port: 0, cfg: () => CFG, launcher, pairing, isLoopback: () => opts.loopback ?? true });
+  const pending = new PendingLaunches(path.join(fs.mkdtempSync(path.join(os.tmpdir(), "acp-pend-")), "pending.json"));
+  const api = await startHttp(hub, { host: "127.0.0.1", port: 0, cfg: () => CFG, launcher, pairing, pending, isLoopback: () => opts.loopback ?? true });
   const base = `http://127.0.0.1:${api.port}`;
   const call = async (method: string, path: string, body?: any, headers: Record<string, string> = {}) => {
     const r = await fetch(base + path, { method, headers: { "content-type": "application/json", ...headers }, body: body ? JSON.stringify(body) : undefined });
     return { status: r.status, json: await r.json() };
   };
-  return { hub, home, api, base, call, pairing, close: async () => { await api.close(); await hub.stop(); } };
+  return { hub, home, api, base, call, pairing, pending, close: async () => { await api.close(); await hub.stop(); } };
 }
 
 test("pairing: one-time code → per-phone key, revocable; master token still works", async () => {
@@ -323,6 +325,21 @@ test("new thread: a locked Mac screen is reported right away, without pressing k
     assert.equal(r.status, 409);
     assert.match(r.json.error?.message ?? r.json.message ?? JSON.stringify(r.json), /locked/);
     assert.deepEqual(calls, []);
+  } finally {
+    await s.close();
+  }
+});
+
+test("new thread when locked: queue it for unlock, then cancel it", async () => {
+  const s = await setup({ locked: true });
+  try {
+    const q = await s.call("POST", "/threads", { cwd: os.tmpdir(), agentId: "fake", prompt: "later please", mode: "when_unlocked" });
+    assert.equal(q.status, 202);
+    assert.equal(q.json.queued.prompt, "later please");
+    assert.equal(s.pending.list().length, 1);
+    assert.equal((await s.call("POST", "/threads", { cwd: "/nope/nope", agentId: "fake", mode: "when_unlocked" })).status, 400);
+    assert.equal((await s.call("POST", `/threads/pending/${q.json.queued.id}/cancel`)).status, 200);
+    assert.equal(s.pending.list().length, 0);
   } finally {
     await s.close();
   }

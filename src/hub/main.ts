@@ -7,6 +7,7 @@ import { loadConfig } from "../config.ts";
 import { paths, zedSupportDir } from "../paths.ts";
 import { ZedReader } from "./zed.ts";
 import { ProgressThrottle, UsageLedger, progressOf } from "./extras.ts";
+import { PendingLaunches } from "./pending.ts";
 import { Hub } from "./hub.ts";
 import { hubInfo, startHttp } from "./http.ts";
 import { Launcher } from "./launcher.ts";
@@ -25,7 +26,31 @@ export async function runHub(): Promise<void> {
   const usage = new UsageLedger(path.join(p.home, "usage.json"));
   for (const t of hub.interpreter.threads.values()) if (t.usage?.cost?.amount !== undefined) usage.seed(t.id, Number(t.usage.cost.amount));
   setInterval(() => usage.flush(), 30_000).unref();
-  const api = await startHttp(hub, { host: cfg.host, port: cfg.port, cfg: () => loadConfig(), launcher, zed, notifier, meta, usage });
+  const pending = new PendingLaunches(path.join(p.home, "pending-launches.json"));
+  const api = await startHttp(hub, { host: cfg.host, port: cfg.port, cfg: () => loadConfig(), launcher, zed, notifier, meta, usage, pending });
+  // Threads asked for while the Mac was locked: start them in Zed once it's unlocked.
+  let starting = false;
+  setInterval(async () => {
+    if (starting || !pending.list().length || (await launcher.locked())) return;
+    starting = true;
+    try {
+      for (const w of [...pending.list()]) {
+        const project = path.basename(w.cwd);
+        try {
+          const t = await launcher.launch({ cwd: w.cwd, agentId: w.agentId, prompt: w.prompt });
+          pending.remove(w.id);
+          log(`started waiting thread ${t.id} in ${w.cwd}`);
+          notifier.message({ title: `${project} · started in Zed`, body: w.prompt ? `“${w.prompt.slice(0, 120)}”` : "Your new thread is ready.", threadId: t.id }).catch(() => {});
+        } catch (err: any) {
+          log(`waiting thread failed: ${err.message}`);
+          if (!pending.failed(w.id)) notifier.message({ title: `${project} · couldn't start the thread`, body: err.message }).catch(() => {});
+        }
+        hub.emit("event", { type: "sidebar.changed", threadId: "", data: {} });
+      }
+    } finally {
+      starting = false;
+    }
+  }, 10_000).unref();
   const titleOf = (t: { id: string; title?: string }) => t.title ?? (zed.available() ? zed.thread(t.id)?.title : undefined) ?? "Thread";
   // Cost ledger + the phone's live "agent working" notification.
   const throttle = new ProgressThrottle();

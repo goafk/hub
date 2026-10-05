@@ -71,6 +71,24 @@ export class Notifier {
   }
 
   /** Sends a notification for a `needs_input` hub event to every device that wants it. */
+  /** A plain notification to every phone that wants "finished" ones (e.g. a waiting thread started). */
+  async message(m: { title: string; body: string; threadId?: string }): Promise<void> {
+    const targets = this.devices.filter((x) => x.prefs.finished);
+    if (!targets.length) return;
+    const hub = this.hub();
+    await this.send(
+      targets.map((x) => ({
+        to: x.token,
+        title: x.showHub && hub.name ? `${hub.name} · ${m.title}` : m.title,
+        body: m.body,
+        sound: "default",
+        priority: "high",
+        channelId: "default",
+        data: { hubId: hub.id, ...(m.threadId ? { threadId: m.threadId, url: `zedthreads://thread/${m.threadId}` } : {}) },
+      })),
+    );
+  }
+
   /** Sends a test notification to one registered phone, so the app can check the whole path works. */
   async test(token: string): Promise<{ ok: boolean; error?: string }> {
     if (!this.devices.some((x) => x.token === token)) return { ok: false, error: "This phone isn't registered for notifications on this Mac yet." };

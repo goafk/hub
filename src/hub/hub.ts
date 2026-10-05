@@ -175,6 +175,22 @@ export class Hub extends EventEmitter {
     return t;
   }
 
+  /**
+   * Starts a new session with a running agent process, without Zed (for "start now" while the
+   * Mac is locked). Zed never sees it; the app shows it as a phone-only thread.
+   */
+  async startHeadless(agentId: string, cwd: string): Promise<Thread> {
+    const procs = [...this.conns.values()].reverse().filter((c) => c.agentId === agentId);
+    if (!procs.length) throw new HubError("offline", `no ${agentId} process is running on the Mac right now — open Zed with that agent once`);
+    const conn = procs.find((c) => (c.commands ?? []).includes("hub-session"));
+    if (!conn) throw new HubError("outdated", "Quit and reopen Zed once (after unlocking) so its agents pick up afk's update; then threads can start from the phone while the Mac is locked.");
+    const r = await this.sendToConn(conn.id, { cmd: "rpc", method: "session/new", params: { cwd, mcpServers: [] } }, 120000);
+    const id = r?.sessionId;
+    const t = id ? this.interpreter.threads.get(id) : undefined;
+    if (!t) throw new HubError("agent_error", "the agent did not start the thread");
+    return t;
+  }
+
   agents(): Array<{ agentId: string; name: string; connections: number }> {
     const by = new Map<string, { agentId: string; name: string; connections: number }>();
     for (const c of this.conns.values()) {

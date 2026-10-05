@@ -1,5 +1,6 @@
 // REST + Server-Sent Events API over the hub.
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -13,6 +14,7 @@ import { Pairing } from "./pairing.ts";
 import { paths, zedConfigDir, zedSupportDir } from "../paths.ts";
 import { readZedTheme } from "./zedtheme.ts";
 import { searchEntries, type UsageLedger } from "./extras.ts";
+import type { PendingLaunches } from "./pending.ts";
 import { VERSION } from "../version.ts";
 import type { Hub } from "./hub.ts";
 import type { Thread } from "./interpreter.ts";
@@ -131,6 +133,7 @@ export function startHttp(
     notifier?: Notifier;
     meta?: MetaStore;
     usage?: UsageLedger;
+    pending?: PendingLaunches;
     pairing?: Pairing;
     isLoopback?: (addr?: string) => boolean;
   },
@@ -251,7 +254,29 @@ export function startHttp(
       if (m === "GET" && url.pathname === "/zed/theme") return send(200, readZedTheme(zedConfigDir(), zedSupportDir()));
       if (m === "GET" && url.pathname === "/zed/sidebar") {
         if (!opts.zed?.available()) throw new HubError("not_found", "Zed database not found");
-        return send(200, { projects: opts.zed.sidebar().map((p) => ({ ...p, threads: p.threads.map((t) => withMeta(withLive(hub, opts.cfg(), t), opts.meta)) })) });
+        const cfg = opts.cfg();
+        const projects: any[] = opts.zed.sidebar().map((p) => ({ ...p, threads: p.threads.map((t) => withMeta(withLive(hub, cfg, t), opts.meta)) }));
+        const projectFor = (cwd: string) => {
+          let p = projects.find((x) => x.path === cwd || (x.paths ?? []).includes(cwd));
+          if (!p) projects.push((p = { name: path.basename(cwd), path: cwd, paths: [cwd], expanded: true, threads: [] }));
+          return p;
+        };
+        // Threads started from the phone without Zed: Zed's database doesn't know them.
+        const inZed = new Set(projects.flatMap((p) => p.threads.map((t: any) => t.id)));
+        for (const t of hub.interpreter.threads.values()) {
+          if (inZed.has(t.id) || !opts.meta?.get(t.id).phoneOnly) continue;
+          const b = cfg.bindings[t.agentId];
+          const firstUser = (hub.interpreter.entries.get(t.id) ?? []).find((e) => e.kind === "user")?.text;
+          const st = { id: t.id, title: t.title ?? firstUser?.split("\n")[0].slice(0, 80) ?? "New thread", agentId: b?.zedName ?? t.agentId, agentName: b?.name ?? t.agentId, createdAt: t.createdAt, updatedAt: t.updatedAt, cwd: t.cwd };
+          const p = projectFor(t.cwd);
+          p.threads = [{ ...withMeta(withLive(hub, cfg, st as SidebarThread), opts.meta), phoneOnly: true }, ...p.threads];
+        }
+        // Waiting to start in Zed once the Mac is unlocked.
+        for (const w of opts.pending?.list() ?? []) {
+          const p = projectFor(w.cwd);
+          (p.pending ??= []).push({ id: w.id, prompt: w.prompt, agentName: cfg.bindings[w.agentId]?.name ?? w.agentId, createdAt: w.createdAt });
+        }
+        return send(200, { projects });
       }
       if (m === "POST" && parts[0] === "zed" && parts[1] === "threads" && parts[3] === "meta") {
         if (!opts.meta) throw new HubError("not_found", "metadata store not enabled");
@@ -299,8 +324,28 @@ export function startHttp(
         }
         if (parts.length === 1 && m === "POST") {
           const b = await body(req);
+          // "when_unlocked": the Mac is locked, so keep the request and start it in Zed on unlock.
+          if (b.mode === "when_unlocked") {
+            if (!opts.pending) throw new HubError("not_found", "waiting threads are not enabled");
+            if (!b.cwd || !fs.existsSync(b.cwd)) throw new HubError("invalid", `not a directory: ${b.cwd}`);
+            if (!opts.cfg().bindings[b.agentId]) throw new HubError("invalid", `agent ${b.agentId} is not set up (run: afk setup)`);
+            return send(202, { queued: opts.pending.add({ cwd: b.cwd, agentId: b.agentId, prompt: b.prompt }) });
+          }
+          // "phone": start it right away with the agent, without Zed (it won't be in Zed's sidebar).
+          if (b.mode === "phone") {
+            const t = await hub.startHeadless(String(b.agentId), String(b.cwd));
+            opts.meta?.set(t.id, { phoneOnly: true });
+            if (b.prompt) await hub.command(t.id, { cmd: "prompt", text: String(b.prompt) });
+            hub.emit("event", { type: "sidebar.changed", threadId: "", data: {} });
+            return send(201, summary(hub, t));
+          }
           const t = await opts.launcher.launch({ cwd: b.cwd, agentId: b.agentId, prompt: b.prompt });
           return send(201, summary(hub, t));
+        }
+        if (parts[1] === "pending" && parts[3] === "cancel" && m === "POST") {
+          opts.pending?.remove(parts[2]);
+          hub.emit("event", { type: "sidebar.changed", threadId: "", data: {} });
+          return send(200, { ok: true });
         }
         const t = hub.thread(parts[1]);
         if (parts.length === 2 && m === "GET") return send(200, { ...summary(hub, t), entries: hub.interpreter.entries.get(t.id) ?? [] });

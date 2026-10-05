@@ -3,7 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export type ThreadMeta = { title?: string; archived?: boolean; autoApprove?: boolean };
+export type ThreadMeta = { title?: string; archived?: boolean; autoApprove?: boolean; /** Started from the phone without Zed: not in Zed's sidebar. */ phoneOnly?: boolean };
 
 export class MetaStore {
   private file: string;
@@ -27,6 +27,7 @@ export class MetaStore {
     if (patch.title !== undefined) next.title = patch.title.trim() || undefined;
     if (patch.archived !== undefined) next.archived = !!patch.archived || undefined;
     if (patch.autoApprove !== undefined) next.autoApprove = !!patch.autoApprove || undefined;
+    if (patch.phoneOnly !== undefined) next.phoneOnly = !!patch.phoneOnly || undefined;
     if (Object.values(next).every((v) => v === undefined)) delete this.data[id];
     else this.data[id] = next;
     fs.mkdirSync(path.dirname(this.file), { recursive: true });

@@ -3,7 +3,7 @@
 // Surfaces follow Zed's themes (Catppuccin Latte / One Dark); depth comes from layered surface
 // colors (widgets can't draw shadows) and nested corners are concentric: outer 24 = inner 12 + padding 12.
 import React from "react";
-import { FlexWidget, TextWidget } from "react-native-android-widget";
+import { FlexWidget, SvgWidget, TextWidget } from "react-native-android-widget";
 
 export type WidgetItem = { id: string; title: string; project: string; state: "input" | "running" | "done"; ago: string };
 export type WidgetProject = { name: string; path: string };
@@ -14,6 +14,13 @@ const T = {
   dark: { base: "#282C34", raised: "#2F343E", pressed: "#3A404B", text: "#D7DAE0", muted: "#9DA5B4", faint: "#7F848E", accent: "#C678DD", warn: "#E5C07B", warnBg: "#3B3628", accentBg: "#3A3145", ok: "#98C379", okBg: "#2E3A2B" },
 } as const;
 type Pal = (typeof T)["light"] | (typeof T)["dark"];
+
+// The AFK mark (assets/brand/afk-mark.svg): grey "away" dot + bar; the bar follows the theme.
+function Mark({ c, size }: { c: Pal; size: number }) {
+  const bar = c === T.dark ? "#FFFFFF" : "#111315";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="395 280 672 604"><circle cx="528" cy="751" r="125" fill="#8C929A"/><path fill="${bar}" d="M567 426 A95 95 0 0 1 729 328 L1049 855 Q1062 876 1037 876 L888 876 Q840 876 812 830 Z"/></svg>`;
+  return <SvgWidget svg={svg} style={{ width: Math.round(size * 1.11), height: size }} />;
+}
 
 const OUTER = 24;
 const PAD = 12;
@@ -40,7 +47,7 @@ function Pill({ text, fg, bg }: { text: string; fg: string; bg: string }) {
 function Header({ data, c }: { data: WidgetData; c: Pal }) {
   return (
     <FlexWidget style={{ width: "match_parent", flexDirection: "row", alignItems: "center", flexGap: 6 }}>
-      <TextWidget text="✳" style={{ fontSize: 18, color: c.accent }} />
+      <Mark c={c} size={16} />
       <TextWidget text="Zed agents" style={{ fontSize: 16.5, color: c.text, fontWeight: "600" }} />
       <FlexWidget style={{ flex: 1 }} />
       {data.needs ? <Pill text={`${data.needs} need you`} fg={c.warn} bg={c.warnBg} /> : null}
@@ -132,8 +139,8 @@ export function NeedsYouWidget({ data, dark }: { data: WidgetData; dark?: boolea
       accessibilityLabel={`${n} threads need you`}
     >
       <FlexWidget style={{ flexDirection: "row", alignItems: "center", flexGap: 5 }}>
-        <TextWidget text="✳" style={{ fontSize: 13, color: c.accent }} />
-        <TextWidget text="Zed" style={{ fontSize: 12.5, color: c.muted, fontWeight: "600" }} />
+        <Mark c={c} size={13} />
+        <TextWidget text="AFK" style={{ fontSize: 12.5, color: c.muted, fontWeight: "600" }} />
       </FlexWidget>
       <FlexWidget style={{ flex: 1 }} />
       <TextWidget text={data.error ? "–" : String(n)} style={{ fontSize: 48, color: (n ? c.warn : c.ok) as any, fontWeight: "700" }} />
@@ -153,7 +160,10 @@ export function QuickStartWidget({ data, dark }: { data: WidgetData; dark?: bool
       accessibilityLabel="Start a new agent thread"
     >
       <FlexWidget clickAction="OPEN_APP" style={{ height: 40, justifyContent: "center", flexDirection: "column" }}>
-        <TextWidget text="✳ New" style={{ fontSize: 15, color: c.accent, fontWeight: "700" }} />
+        <FlexWidget style={{ flexDirection: "row", alignItems: "center", flexGap: 6 }}>
+          <Mark c={c} size={14} />
+          <TextWidget text="New" style={{ fontSize: 15, color: c.text, fontWeight: "700" }} />
+        </FlexWidget>
         <TextWidget text="thread in" style={{ fontSize: 11, color: c.faint }} />
       </FlexWidget>
       {projects.length ? (

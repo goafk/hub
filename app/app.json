@@ -21,7 +21,7 @@
     "android": {
       "package": "dev.goafk.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6E9EF",
+        "backgroundColor": "#14161B",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -49,7 +49,8 @@
       [
         "expo-notifications",
         {
-          "color": "#8839EF"
+          "color": "#14161B",
+          "icon": "./assets/notification-icon.png"
         }
       ],
       [
@@ -139,6 +140,19 @@
           "cameraPermission": "AFK uses the camera to scan the pairing code shown on your Mac.",
           "microphonePermission": false,
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 96,
+          "resizeMode": "contain",
+          "backgroundColor": "#EFF1F5",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#14161B"
+          }
         }
       ]
     ],

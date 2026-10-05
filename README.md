@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="app/assets/brand/afk-logo-dark.svg">
+    <img alt="afk" src="app/assets/brand/afk-logo.svg" width="260">
+  </picture>
+</p>
+
 # AFK
 
 Two-way sync between [Zed](https://zed.dev) agent threads and a local hub, for **any ACP agent**

@@ -83,6 +83,13 @@ export const FileIcon = (p: P) => (<S {...p}><Path d="M14 3H7a2 2 0 0 0-2 2v14a2
 export const PencilIcon = (p: P) => (<S {...p}><Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z" /></S>);
 export const BoltIcon = (p: P) => (<S {...p}><Path d="M13 3 5 13.5h6L10 21l8-10.5h-6z" /></S>);
 export const LaptopIcon = (p: P) => (<S {...p}><Rect x={4.5} y={5} width={15} height={10.5} rx={1.5} /><Path d="M2.5 19h19" /></S>);
+/** The AFK mark: grey "away" dot + bar (assets/brand/afk-mark.svg). */
+export const AfkMark = ({ size = 24, bar }: { size?: number; bar: string }) => (
+  <Svg width={size * 1.11} height={size} viewBox="395 280 672 604">
+    <Circle cx={528} cy={751} r={125} fill="#8C929A" />
+    <Path fill={bar} d="M567 426 A95 95 0 0 1 729 328 L1049 855 Q1062 876 1037 876 L888 876 Q840 876 812 830 Z" />
+  </Svg>
+);
 export const TrashIcon = (p: P) => (<S {...p}><Path d="M4 7h16M9.5 7V4.5h5V7M6 7l1 13h10l1-13M10 11v5M14 11v5" /></S>);
 export const GlobeIcon = (p: P) => (<S {...p}><Circle cx={12} cy={12} r={8.5} /><Path d="M3.5 12h17M12 3.5c2.5 2.5 3.5 5.5 3.5 8.5s-1 6-3.5 8.5c-2.5-2.5-3.5-5.5-3.5-8.5s1-6 3.5-8.5z" /></S>);
 export const ToolIcon = (p: P) => (<S {...p}><Path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z" /></S>);

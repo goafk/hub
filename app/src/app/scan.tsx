@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { parsePairLink } from "../lib/hosts";
 import { useStore } from "../lib/store";
 import { mono, ui, useTheme } from "../lib/theme";
-import { ChevronLeft } from "../components/Icons";
+import { AfkMark, ChevronLeft } from "../components/Icons";
 
 // The one-line install (install.sh, served from goafk.dev).
 const INSTALL_COMMAND: string | null = "curl -fsSL https://goafk.dev/install.sh | sh";
@@ -49,6 +49,7 @@ export default function Scan() {
             <ChevronLeft color={t.muted} size={22} />
           </Pressable>
         ) : null}
+        {first ? <AfkMark size={26} bar={t.text} /> : null}
         <Text style={[st.title, { color: t.text }]}>{first ? "Connect your Mac" : "Add a Mac"}</Text>
       </View>
 
@@ -93,7 +94,7 @@ export default function Scan() {
 
 const st = StyleSheet.create({
   root: { flex: 1, paddingHorizontal: 20, gap: 14 },
-  head: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 },
+  head: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 44 },
   back: { width: 36, height: 44, justifyContent: "center" },
   title: { fontSize: 24, fontWeight: "700", fontFamily: ui },
   steps: { gap: 8 },

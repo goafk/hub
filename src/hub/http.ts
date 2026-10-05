@@ -12,6 +12,7 @@ import { HubError } from "./hub.ts";
 import { Pairing } from "./pairing.ts";
 import { paths, zedConfigDir, zedSupportDir } from "../paths.ts";
 import { readZedTheme } from "./zedtheme.ts";
+import { searchEntries, type UsageLedger } from "./extras.ts";
 import { VERSION } from "../version.ts";
 import type { Hub } from "./hub.ts";
 import type { Thread } from "./interpreter.ts";
@@ -129,6 +130,7 @@ export function startHttp(
     zed?: ZedReader;
     notifier?: Notifier;
     meta?: MetaStore;
+    usage?: UsageLedger;
     pairing?: Pairing;
     isLoopback?: (addr?: string) => boolean;
   },
@@ -220,6 +222,32 @@ export function startHttp(
         return send(200, { files: searchFiles(cwd, url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 40)) });
       }
       if (m === "GET" && url.pathname === "/events") return sse(hub, req, res, url.searchParams.get("thread"));
+      if (m === "GET" && url.pathname === "/search") {
+        const threads = [...hub.interpreter.threads.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+        const hits = searchEntries(hub.interpreter.entries, threads.map((t) => t.id), url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 40));
+        const title = (id: string) => hub.interpreter.threads.get(id)?.title ?? (opts.zed?.available() ? opts.zed.thread(id)?.title : undefined) ?? "Thread";
+        return send(200, { results: hits.map((h) => ({ ...h, title: title(h.threadId), cwd: hub.interpreter.threads.get(h.threadId)?.cwd ?? "", updatedAt: hub.interpreter.threads.get(h.threadId)?.updatedAt ?? 0 })) });
+      }
+      if (m === "GET" && url.pathname === "/usage") {
+        const sum = opts.usage?.summary() ?? { currency: "USD", today: 0, days: [], byThread: {} };
+        const threads = [...hub.interpreter.threads.values()]
+          .filter((t) => t.usage)
+          .map((t) => ({
+            id: t.id,
+            title: t.title ?? (opts.zed?.available() ? opts.zed.thread(t.id)?.title : undefined) ?? "Thread",
+            cwd: t.cwd,
+            status: t.status,
+            used: t.usage?.used,
+            size: t.usage?.size,
+            cost: t.usage?.cost?.amount,
+            week: sum.byThread[t.id] ?? 0,
+            updatedAt: t.updatedAt,
+          }))
+          .sort((a, b) => b.week - a.week || (b.cost ?? 0) - (a.cost ?? 0))
+          .slice(0, 30);
+        const { byThread: _b, ...totals } = sum;
+        return send(200, { ...totals, threads });
+      }
       if (m === "GET" && url.pathname === "/zed/theme") return send(200, readZedTheme(zedConfigDir(), zedSupportDir()));
       if (m === "GET" && url.pathname === "/zed/sidebar") {
         if (!opts.zed?.available()) throw new HubError("not_found", "Zed database not found");

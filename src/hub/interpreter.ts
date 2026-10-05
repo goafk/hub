@@ -186,7 +186,7 @@ export class Interpreter {
         t.pendingElicitations.push({ requestId: msg.id, mode: p.mode ?? "form", toolCallId: p.toolCallId, message: p.message ?? "", requestedSchema: p.requestedSchema, url: p.url });
         t.status = "needs_permission";
         this.touch(t);
-        this.emit({ type: "needs_input", threadId: t.id, data: { reason: "question", requestId: msg.id, message: p.message } });
+        this.emit({ type: "needs_input", threadId: t.id, data: { reason: "question", requestId: msg.id, message: p.message, requestedSchema: p.requestedSchema } });
         break;
       }
       case "session/request_permission": {

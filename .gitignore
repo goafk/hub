@@ -1,0 +1,6 @@
+node_modules/
+*.log
+.gstack/
+# Local planning notes and per-project Firebase config (EAS still gets it via app/.easignore)
+docs/superpowers/
+app/google-services.json

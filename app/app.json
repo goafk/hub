@@ -1,0 +1,162 @@
+{
+  "expo": {
+    "name": "AFK",
+    "slug": "zed-threads",
+    "scheme": "zedthreads",
+    "version": "1.2.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.acpsync.zedthreads",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "Connects to the AFK hub on your Mac."
+      }
+    },
+    "android": {
+      "package": "dev.acpsync.zedthreads",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6E9EF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "POST_NOTIFICATIONS",
+        "POST_NOTIFICATIONS"
+      ],
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#8839EF"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": [
+            "text/*",
+            "image/*"
+          ],
+          "disableIOS": true
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Agents",
+              "label": "Zed agents",
+              "description": "Threads that need you and agents at work",
+              "minWidth": "290dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "previewImage": "./assets/widget-preview/agents.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical",
+              "minResizeWidth": "180dp",
+              "minResizeHeight": "60dp"
+            },
+            {
+              "name": "AgentsLarge",
+              "label": "Zed agents \u00b7 large",
+              "description": "Up to five threads, plus the inbox",
+              "minWidth": "290dp",
+              "minHeight": "250dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 4,
+              "previewImage": "./assets/widget-preview/agents-large.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical",
+              "minResizeWidth": "180dp",
+              "minResizeHeight": "110dp"
+            },
+            {
+              "name": "NeedsYou",
+              "label": "Needs you",
+              "description": "How many threads need you",
+              "minWidth": "130dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "previewImage": "./assets/widget-preview/needs-you.png",
+              "updatePeriodMillis": 1800000,
+              "minResizeWidth": "90dp",
+              "minResizeHeight": "90dp",
+              "resizeMode": "horizontal|vertical"
+            },
+            {
+              "name": "QuickStart",
+              "label": "Quick start",
+              "description": "New agent thread in a recent project",
+              "minWidth": "290dp",
+              "minHeight": "50dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "previewImage": "./assets/widget-preview/quick-start.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical",
+              "minResizeWidth": "180dp",
+              "minResizeHeight": "40dp"
+            }
+          ]
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "AFK uses the camera to scan the pairing code shown on your Mac.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "owner": "e.mukja",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8007bd8a-e1be-484c-96dc-beab88afc9ea"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8007bd8a-e1be-484c-96dc-beab88afc9ea"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

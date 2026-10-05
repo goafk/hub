@@ -1,0 +1,16 @@
+{
+  "name": "afk",
+  "version": "0.2.0",
+  "description": "AFK: your Zed agent threads on your phone \u2014 live, two-way, any ACP agent",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.18"
+  },
+  "bin": {
+    "afk": "bin/afk"
+  },
+  "scripts": {
+    "test": "node --no-warnings --test test/*.test.ts"
+  }
+}

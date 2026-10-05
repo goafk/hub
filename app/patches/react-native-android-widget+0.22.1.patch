@@ -1,0 +1,59 @@
+diff --git a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
+index a057c09..1384bc8 100644
+--- a/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
++++ b/node_modules/react-native-android-widget/android/src/main/java/com/reactnativeandroidwidget/RNWidgetUtil.java
+@@ -19,20 +19,45 @@ import java.util.List;
+ public class RNWidgetUtil {
+     public static int getWidgetWidth(Context context, int widgetId) {
+         boolean isPortrait = context.getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
+-        if (isPortrait) {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
+-        } else {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH);
++        int reported = isPortrait
++            ? getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
++            : getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH);
++        // acp-sync patch: some launchers report the provider's minimum size; the actual laid-out
++        // sizes (API 31+) are in OPTION_APPWIDGET_SIZES. Use the larger so the widget fills its cell.
++        return (int) Math.round(Math.max(reported, getActualSize(context, widgetId, isPortrait, true)) / launcherScale());
++    }
++
++    // acp-sync patch: OnePlus/OPPO/realme launchers (ColorOS/OxygenOS) draw every widget view at 0.85x
++    // of the size they report, leaving a gap right and bottom. Render 1/0.85 larger so it fills the cell;
++    // tap areas live in the same scaled view, so they stay aligned.
++    private static double launcherScale() {
++        String m = android.os.Build.MANUFACTURER == null ? "" : android.os.Build.MANUFACTURER.toLowerCase();
++        return (m.contains("oneplus") || m.contains("oppo") || m.contains("realme")) ? 0.85 : 1.0;
++    }
++
++    private static int getActualSize(Context context, int widgetId, boolean isPortrait, boolean width) {
++        if (android.os.Build.VERSION.SDK_INT < 31) return 0;
++        try {
++            java.util.ArrayList<android.util.SizeF> sizes = AppWidgetManager.getInstance(context).getAppWidgetOptions(widgetId)
++                .getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES);
++            if (sizes == null || sizes.isEmpty()) return 0;
++            // Portrait uses the narrowest/tallest entry, landscape the widest/shortest.
++            android.util.SizeF pick = sizes.get(0);
++            for (android.util.SizeF s : sizes) {
++                if (isPortrait ? s.getWidth() < pick.getWidth() : s.getWidth() > pick.getWidth()) pick = s;
++            }
++            return Math.round(width ? pick.getWidth() : pick.getHeight());
++        } catch (Exception e) {
++            return 0;
+         }
+     }
+ 
+     public static int getWidgetHeight(Context context, int widgetId) {
+         boolean isPortrait = context.getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
+-        if (isPortrait) {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT);
+-        } else {
+-            return getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
+-        }
++        int reported = isPortrait
++            ? getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
++            : getWidgetSizeInDp(context, widgetId, AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
++        return (int) Math.round(Math.max(reported, getActualSize(context, widgetId, isPortrait, false)) / launcherScale());
+     }
+ 
+     public static int dpToPx(Context context, double dpValue) {

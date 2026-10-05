@@ -15,7 +15,7 @@ const T = {
 } as const;
 type Pal = (typeof T)["light"] | (typeof T)["dark"];
 
-// The AFK mark (assets/brand/afk-mark.svg): grey "away" dot + bar; the bar follows the theme.
+// The afk mark (assets/brand/afk-mark.svg): grey "away" dot + bar; the bar follows the theme.
 function Mark({ c, size }: { c: Pal; size: number }) {
   const bar = c === T.dark ? "#FFFFFF" : "#111315";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="395 280 672 604"><circle cx="528" cy="751" r="125" fill="#8C929A"/><path fill="${bar}" d="M567 426 A95 95 0 0 1 729 328 L1049 855 Q1062 876 1037 876 L888 876 Q840 876 812 830 Z"/></svg>`;
@@ -140,7 +140,7 @@ export function NeedsYouWidget({ data, dark }: { data: WidgetData; dark?: boolea
     >
       <FlexWidget style={{ flexDirection: "row", alignItems: "center", flexGap: 5 }}>
         <Mark c={c} size={13} />
-        <TextWidget text="AFK" style={{ fontSize: 12.5, color: c.muted, fontWeight: "600" }} />
+        <TextWidget text="afk" style={{ fontSize: 12.5, color: c.muted, fontWeight: "600" }} />
       </FlexWidget>
       <FlexWidget style={{ flex: 1 }} />
       <TextWidget text={data.error ? "–" : String(n)} style={{ fontSize: 48, color: (n ? c.warn : c.ok) as any, fontWeight: "700" }} />

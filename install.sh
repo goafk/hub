@@ -1,5 +1,5 @@
 #!/bin/sh
-# AFK installer — one line:
+# afk installer — one line:
 #   curl -fsSL https://goafk.dev/install.sh | sh
 #
 # Installs into ~/.afk (its own Node.js if yours is missing or too old), adds the `afk`
@@ -20,7 +20,7 @@ say() { printf '%s\n' "$*"; }
 step() { printf '\033[1m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[31merror:\033[0m %s\n' "$*" >&2; exit 1; }
 
-[ "$(uname -s)" = "Darwin" ] || die "AFK runs on macOS (it syncs the Zed app on your Mac)."
+[ "$(uname -s)" = "Darwin" ] || die "afk runs on macOS (it syncs the Zed app on your Mac)."
 
 HOME_DIR="${AFK_HOME:-${ACP_SYNC_HOME:-$HOME/.afk}}"
 SRC="$HOME_DIR/src"
@@ -59,13 +59,13 @@ else
 fi
 say "    Node.js $("$NODE" --version) ($NODE)"
 
-# --- AFK itself --------------------------------------------------------------------------
-step "Installing AFK into $SRC"
+# --- afk itself --------------------------------------------------------------------------
+step "Installing afk into $SRC"
 NEW="$HOME_DIR/src.new"
 rm -rf "$NEW" && mkdir -p "$NEW"
 SOURCE_DIR="${AFK_SOURCE:-${ACP_SYNC_SOURCE:-}}"
 if [ -n "$SOURCE_DIR" ]; then
-  [ -f "$SOURCE_DIR/src/cli.ts" ] || die "AFK_SOURCE=$SOURCE_DIR is not an AFK checkout"
+  [ -f "$SOURCE_DIR/src/cli.ts" ] || die "AFK_SOURCE=$SOURCE_DIR is not an afk checkout"
   (cd "$SOURCE_DIR" && tar -cf - --exclude ./app --exclude ./node_modules --exclude ./.git --exclude ./test .) | tar -xf - -C "$NEW"
 else
   URL="${AFK_TARBALL:-${ACP_SYNC_TARBALL:-$TARBALL_DEFAULT}}"
@@ -88,7 +88,7 @@ else
   tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/app' --exclude '*/test' || die "the download is not a valid archive: $URL"
   rm -f "$TGZ"
 fi
-[ -f "$NEW/src/cli.ts" ] || die "the download does not look like AFK"
+[ -f "$NEW/src/cli.ts" ] || die "the download does not look like afk"
 rm -rf "$SRC" && mv "$NEW" "$SRC"
 
 # --- the `afk` command -------------------------------------------------------------------

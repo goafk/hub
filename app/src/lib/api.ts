@@ -1,4 +1,4 @@
-// Client for the AFK hub HTTP API.
+// Client for the afk hub HTTP API.
 import { Platform } from "react-native";
 import { activeConn } from "./hosts";
 

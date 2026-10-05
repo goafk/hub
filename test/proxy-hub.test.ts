@@ -62,7 +62,7 @@ test("agent error on injected prompt is surfaced in Zed and as needs_input", asy
     const sid = await zed.open();
     await until(() => !!hub.interpreter.threads.get(sid)?.conn);
     await hub.command(sid, { cmd: "prompt", text: "FAIL please" });
-    const m = await zed.next((x) => isUpdate("agent_message_chunk")(x) && /⚠️ AFK: model not available/.test(x.params.update.content.text));
+    const m = await zed.next((x) => isUpdate("agent_message_chunk")(x) && /⚠️ afk: model not available/.test(x.params.update.content.text));
     assert.ok(m);
     await until(() => events.some((e) => e.type === "needs_input" && e.data.stopReason === "error"));
   } finally {

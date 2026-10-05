@@ -198,7 +198,7 @@ export function createRelay(opts: RelayOpts): Relay {
           (res) => {
             bump(info.sessionId, -1);
             if (res.error) {
-              toZed("session/update", { sessionId: info.sessionId, update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: `⚠️ AFK: ${res.error.message ?? "agent error"}` } } });
+              toZed("session/update", { sessionId: info.sessionId, update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: `⚠️ afk: ${res.error.message ?? "agent error"}` } } });
             }
           },
           () => bump(info.sessionId, -1),

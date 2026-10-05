@@ -20,7 +20,7 @@ export function qr(text: string): Promise<string> {
 export async function printPairing(home: string, cfg: Config, name: string, urls: string[]): Promise<void> {
   const { code, expiresAt } = new Pairing(home).createCode();
   const link = pairingLink(cfg, name, urls, code);
-  console.log("\nScan with your phone's camera (or in the AFK app → Add a Mac):\n");
+  console.log("\nScan with your phone's camera (or in the afk app → Add a Mac):\n");
   console.log(await qr(link));
   const mins = Math.round((expiresAt - Date.now()) / 60_000);
   console.log(`Pairing code ${code.slice(0, 5)}-${code.slice(5)} · valid ${mins} min, one phone`);

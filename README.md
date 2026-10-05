@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-# AFK
+# afk
 
 Two-way sync between [Zed](https://zed.dev) agent threads and a local hub, for **any ACP agent**
 Zed can run (Claude Agent, Codex, Cursor, OpenCode, Pi, …). Start a thread in Zed and the hub
@@ -35,7 +35,7 @@ and runs **`afk setup`**, which:
 - makes the Mac reachable from your phone: **Tailscale** (HTTPS on `:8443`, works anywhere) if it's
   installed and signed in, plus your **Wi-Fi** address (`--no-lan` / `--no-tailscale` to skip either);
 - checks Zed, the hub and the network, and tells you if Zed needs one restart;
-- prints a **pairing QR**. Scan it with the phone (camera or AFK → *Add a Mac*): the app
+- prints a **pairing QR**. Scan it with the phone (camera or afk → *Add a Mac*): the app
   trades the one-time code for its own key. The hub's master token never leaves the Mac.
 
 ```sh

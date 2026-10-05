@@ -27,7 +27,7 @@ export default function Scan() {
     if (handled.current) return;
     const link = parsePairLink(data);
     if (!data.startsWith("zedthreads://pair") || !link) {
-      setMsg("That's not an AFK pairing code.");
+      setMsg("That's not an afk pairing code.");
       return;
     }
     handled.current = true;

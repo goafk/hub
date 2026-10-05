@@ -83,7 +83,7 @@ export const FileIcon = (p: P) => (<S {...p}><Path d="M14 3H7a2 2 0 0 0-2 2v14a2
 export const PencilIcon = (p: P) => (<S {...p}><Path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4z" /></S>);
 export const BoltIcon = (p: P) => (<S {...p}><Path d="M13 3 5 13.5h6L10 21l8-10.5h-6z" /></S>);
 export const LaptopIcon = (p: P) => (<S {...p}><Rect x={4.5} y={5} width={15} height={10.5} rx={1.5} /><Path d="M2.5 19h19" /></S>);
-/** The AFK mark: grey "away" dot + bar (assets/brand/afk-mark.svg). */
+/** The afk mark: grey "away" dot + bar (assets/brand/afk-mark.svg). */
 export const AfkMark = ({ size = 24, bar }: { size?: number; bar: string }) => (
   <Svg width={size * 1.11} height={size} viewBox="395 280 672 604">
     <Circle cx={528} cy={751} r={125} fill="#8C929A" />

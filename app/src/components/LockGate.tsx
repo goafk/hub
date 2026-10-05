@@ -48,7 +48,7 @@ export function LockGate({ children }: { children: React.ReactNode }) {
   const unlock = useCallback(async () => {
     setErr(null);
     authenticating.current = true;
-    const r = await LocalAuthentication.authenticateAsync({ promptMessage: "Unlock AFK", cancelLabel: "Cancel" });
+    const r = await LocalAuthentication.authenticateAsync({ promptMessage: "Unlock afk", cancelLabel: "Cancel" });
     authenticating.current = false;
     if (r.success) {
       setLocked(false);
@@ -115,7 +115,7 @@ export function LockGate({ children }: { children: React.ReactNode }) {
       {children}
       {locked ? (
         <View style={[StyleSheet.absoluteFill, st.cover, { backgroundColor: t.panel }]}>
-          <Text style={[st.title, { color: t.text }]}>AFK is locked</Text>
+          <Text style={[st.title, { color: t.text }]}>afk is locked</Text>
           {err ? <Text style={[st.err, { color: t.error }]}>{err}</Text> : null}
           <Pressable onPress={unlock} style={[st.btn, { backgroundColor: t.accent }]}>
             <Text style={st.btnText}>Unlock</Text>

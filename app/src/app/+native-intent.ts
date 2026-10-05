@@ -1,4 +1,4 @@
-// Send "Share to AFK" launches to the share screen.
+// Send "Share to afk" launches to the share screen.
 import { shareModule } from "../lib/share";
 
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {

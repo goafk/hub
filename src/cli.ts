@@ -118,7 +118,7 @@ async function main(argv: string[]): Promise<void> {
       const only = flag("--only")?.split(",").map((s) => s.trim()).filter(Boolean);
       const ok = (m: string) => console.log(`  ✓ ${m}`);
       const warn = (m: string) => console.log(`  ! ${m}`);
-      console.log("Setting up AFK\n");
+      console.log("Setting up afk\n");
       // Renamed from acp-sync: move ~/.acp-sync to ~/.afk (state, pairings, history). A link stays at
       // the old path so agents Zed already started keep working until Zed restarts.
       {

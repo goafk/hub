@@ -1,4 +1,4 @@
-// "Share to AFK" from any app: text, links and screenshots go to a new or existing thread.
+// "Share to afk" from any app: text, links and screenshots go to a new or existing thread.
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";

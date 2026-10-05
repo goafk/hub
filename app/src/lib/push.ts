@@ -52,7 +52,7 @@ export async function registerForPush(api: Api, prefs?: { finished?: boolean; in
   }
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted") status = (await Notifications.requestPermissionsAsync()).status;
-  if (status !== "granted") return { status: "denied", detail: "Allow notifications for AFK in system settings." };
+  if (status !== "granted") return { status: "denied", detail: "Allow notifications for afk in system settings." };
   const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? (Constants as any)?.easConfig?.projectId;
   if (!projectId) return { status: "error", detail: "Missing EAS project id in app config." };
   try {

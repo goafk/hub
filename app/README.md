@@ -1,4 +1,4 @@
-# AFK (mobile app)
+# afk (mobile app)
 
 Expo app that mirrors Zed's agent **Threads sidebar** and **thread view** from the afk hub on
 your Mac: the same projects in the same order, every thread with its agent icon and age, full

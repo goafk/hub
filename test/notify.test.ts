@@ -69,3 +69,22 @@ test("drops tokens Expo reports as unregistered; unregister works", async () => 
   assert.equal(n.list().length, 0);
   assert.throws(() => n.register({ token: "nope", platform: "android" }), /Expo push token/);
 });
+
+test("notify: test push goes only to a registered phone and reports Expo errors", async () => {
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "afk-n-")), "devices.json");
+  const sent: any[] = [];
+  let reply: any = { data: [{ status: "ok" }] };
+  const n = new Notifier(file, async (_url, body) => {
+    sent.push(...JSON.parse(body));
+    return reply;
+  });
+  n.hub = () => ({ id: "h1", name: "Studio" });
+  assert.equal((await n.test("ExponentPushToken[nope]")).ok, false);
+  assert.equal(sent.length, 0);
+  n.register({ token: "ExponentPushToken[abc]", platform: "android" });
+  assert.deepEqual(await n.test("ExponentPushToken[abc]"), { ok: true });
+  assert.equal(sent[0].to, "ExponentPushToken[abc]");
+  assert.equal(sent[0].title, "afk · Studio");
+  reply = { data: [{ status: "error", message: "not registered" }] };
+  assert.deepEqual(await n.test("ExponentPushToken[abc]"), { ok: false, error: "not registered" });
+});

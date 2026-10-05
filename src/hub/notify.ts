@@ -52,6 +52,22 @@ export class Notifier {
   }
 
   /** Sends a notification for a `needs_input` hub event to every device that wants it. */
+  /** Sends a test notification to one registered phone, so the app can check the whole path works. */
+  async test(token: string): Promise<{ ok: boolean; error?: string }> {
+    if (!this.devices.some((x) => x.token === token)) return { ok: false, error: "This phone isn't registered for notifications on this Mac yet." };
+    const hub = this.hub();
+    try {
+      const res: any = await this.post(
+        EXPO_PUSH,
+        JSON.stringify([{ to: token, title: hub.name ? `afk · ${hub.name}` : "afk", body: "Notifications work. You'll hear from your agents here.", sound: "default", priority: "high", channelId: "default", data: { hubId: hub.id } }]),
+      );
+      const r = res?.data?.[0];
+      return r?.status === "error" ? { ok: false, error: r.message ?? r.details?.error ?? "Push failed" } : { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e.message };
+    }
+  }
+
   async notify(ev: HubEvent, thread: { id: string; title?: string; cwd: string }, lastAgentText: string): Promise<void> {
     if (ev.type !== "needs_input") return;
     const d = ev.data ?? {};

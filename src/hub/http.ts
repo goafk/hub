@@ -191,6 +191,7 @@ export function startHttp(
             throw new HubError("invalid", e.message);
           }
         }
+        if (m === "POST" && parts[1] === "test") return send(200, await opts.notifier.test(String((await body(req)).token ?? "")));
         if (m === "POST" && parts[2] === "delete") {
           opts.notifier.unregister(parts[1]);
           return send(200, { ok: true });

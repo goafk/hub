@@ -1,0 +1,7 @@
+{ "name": "Cat", "themes": [
+  { "name": "Cat Latte", "appearance": "light", "style": {
+    "background": "#d7dce5", "text": "#4c4f69", "text.accent": "#8839ef", "border": "#ccd0da", "element.selected": "#ccd0da4d", "bogus": "red",
+    "players": [{ "cursor": "#dc8a78" }],
+    "syntax": { "keyword": { "color": "#8839ef" }, "string": { "color": "#40a02b", "font_style": null }, "comment": { "color": null } } } },
+  { "name": "Cat Mocha", "appearance": "dark", "style": { "background": "#11111b" } }
+] }

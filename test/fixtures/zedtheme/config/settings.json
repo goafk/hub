@@ -1,0 +1,4 @@
+// comments are fine
+{
+  "theme": { "mode": "dark", "light": "Cat Latte", "dark": "One Dark", },
+}

@@ -10,7 +10,8 @@ import type { Config } from "../config.ts";
 import type { PromptCommand } from "./queue.ts";
 import { HubError } from "./hub.ts";
 import { Pairing } from "./pairing.ts";
-import { paths } from "../paths.ts";
+import { paths, zedConfigDir, zedSupportDir } from "../paths.ts";
+import { readZedTheme } from "./zedtheme.ts";
 import { VERSION } from "../version.ts";
 import type { Hub } from "./hub.ts";
 import type { Thread } from "./interpreter.ts";
@@ -218,6 +219,7 @@ export function startHttp(
         return send(200, { files: searchFiles(cwd, url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 40)) });
       }
       if (m === "GET" && url.pathname === "/events") return sse(hub, req, res, url.searchParams.get("thread"));
+      if (m === "GET" && url.pathname === "/zed/theme") return send(200, readZedTheme(zedConfigDir(), zedSupportDir()));
       if (m === "GET" && url.pathname === "/zed/sidebar") {
         if (!opts.zed?.available()) throw new HubError("not_found", "Zed database not found");
         return send(200, { projects: opts.zed.sidebar().map((p) => ({ ...p, threads: p.threads.map((t) => withMeta(withLive(hub, opts.cfg(), t), opts.meta)) })) });

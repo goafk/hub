@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-label="afk architecture: Zed talks ACP to each agent through the afk relay (in-process for Claude and Codex, a proxy for other agents). The relay mirrors traffic to the afk hub over a unix socket. The hub keeps SQLite history, reads Zed's sidebar and serves HTTP plus live events, reached by the phone over Wi-Fi or Tailscale HTTPS. Push notifications go through Expo and Firebase."><title>afk architecture: Zed talks ACP to each agent through the afk relay (in-process for Claude and Codex, a proxy for other agents). The relay mirrors traffic to the afk hub over a unix socket. The hub keeps SQLite history, reads Zed's sidebar and serves HTTP plus live events, reached by the phone over Wi-Fi or Tailscale HTTPS. Push notifications go through Expo and Firebase.</title>
+<rect x="20" y="20" width="860" height="366" rx="18" fill="#F7F7F5" stroke="#C7C9C6" stroke-dasharray="5 5"/>
+<circle cx="46" cy="47" r="4" fill="#8C929A"/><text x="58" y="51.5" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="500" fill="#666C74">Your computer</text>
+<rect x="50" y="70" width="180" height="64" rx="12" fill="#FFFFFF" stroke="#DDDEDA"/>
+<text x="140.0" y="98.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#111315">Zed</text>
+<text x="140.0" y="117.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#666C74">ACP client, unchanged</text>
+<rect x="360" y="70" width="180" height="64" rx="12" fill="#111315" stroke="#111315"/>
+<text x="450.0" y="98.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF">afk relay</text>
+<text x="450.0" y="117.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#A8ABB0">mirror + inject</text>
+<rect x="670" y="70" width="180" height="64" rx="12" fill="#FFFFFF" stroke="#DDDEDA"/>
+<text x="760.0" y="98.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#111315">Agent process</text>
+<text x="760.0" y="117.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#666C74">claude-acp, codex-acp, …</text>
+<line x1="230" y1="102" x2="360" y2="102" stroke="#A8ABB0" stroke-width="1.5"/>
+<path d="M353 97.5 L360 102 L353 106.5" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M237 97.5 L230 102 L237 106.5" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="295.0" y="92" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#666C74">ACP · stdio</text>
+<line x1="540" y1="102" x2="670" y2="102" stroke="#A8ABB0" stroke-width="1.5"/>
+<path d="M663 97.5 L670 102 L663 106.5" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M547 97.5 L540 102 L547 106.5" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="605.0" y="92" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#666C74">ACP · stdio</text>
+<text x="450" y="158" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#666C74">in-process preload for Claude &amp; Codex · separate proxy for other agents</text>
+<line x1="450" y1="170" x2="450" y2="222" stroke="#A8ABB0" stroke-width="1.5"/>
+<path d="M445.5 215 L450 222 L454.5 215" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M445.5 177 L450 170 L454.5 177" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="466" y="200.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11.5" fill="#666C74">unix socket · mirror + commands</text>
+<rect x="330" y="222" width="240" height="64" rx="12" fill="#111315" stroke="#111315"/>
+<text x="450.0" y="250.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#FFFFFF">afk hub</text>
+<text x="450.0" y="269.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#A8ABB0">launchd service</text>
+<rect x="110" y="302" width="150" height="26" rx="8" fill="#EFEFEC"/><text x="185.0" y="319" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#444950">SQLite history</text>
+<rect x="274" y="302" width="170" height="26" rx="8" fill="#EFEFEC"/><text x="359.0" y="319" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#444950">Zed sidebar reader</text>
+<rect x="458" y="302" width="170" height="26" rx="8" fill="#EFEFEC"/><text x="543.0" y="319" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#444950">HTTP + SSE :47321</text>
+<rect x="642" y="302" width="150" height="26" rx="8" fill="#EFEFEC"/><text x="717.0" y="319" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" fill="#444950">pairing keys</text>
+<text x="450" y="354" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#666C74">…plus the message queue, auto-approve and git endpoints</text>
+<line x1="450" y1="386" x2="450" y2="462" stroke="#A8ABB0" stroke-width="1.5"/>
+<path d="M445.5 455 L450 462 L454.5 455" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M445.5 393 L450 386 L454.5 393" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="424.0" r="6" fill="#8C929A" stroke="#ffffff" stroke-width="3"/>
+<text x="466" y="428.0" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" fill="#666C74">Wi-Fi :47321  ·  Tailscale HTTPS :8443</text>
+<rect x="330" y="462" width="240" height="64" rx="12" fill="#FFFFFF" stroke="#DDDEDA"/>
+<text x="450.0" y="490.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#111315">afk app</text>
+<text x="450.0" y="509.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#666C74">phone · key per device</text>
+<rect x="670" y="462" width="180" height="64" rx="12" fill="#FFFFFF" stroke="#DDDEDA"/>
+<text x="760.0" y="490.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#111315">Expo push</text>
+<text x="760.0" y="509.0" text-anchor="middle" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="12" fill="#666C74">→ FCM / APNs</text>
+<path d="M570 254 H760 V462" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M755.5 455 L760 462 L764.5 455" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="772" y="420" text-anchor="start" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="11.5" font-weight="400" fill="#666C74">notifications</text>
+<line x1="570" y1="494" x2="670" y2="494" stroke="#A8ABB0" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M577 489.5 L570 494 L577 498.5" fill="none" stroke="#A8ABB0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

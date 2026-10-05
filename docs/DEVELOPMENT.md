@@ -7,12 +7,12 @@ Zed can run (Claude Agent, Codex, Cursor, OpenCode, Pi, …). Start a thread in 
 sees it immediately; start threads, send prompts, change model/mode/effort, and answer
 permission requests from the hub — Zed shows everything live. Built to back a mobile app.
 
-```
-Zed ──ACP──▶ afk proxy ──ACP──▶ real agent      (one proxy per agent process)
-                 │  mirror + commands (unix socket)
-                 ▼
-            afk hub ── SQLite history ── HTTP + SSE on 127.0.0.1:47321
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../assets/readme/architecture-dark.svg">
+    <img alt="afk architecture: Zed talks ACP to each agent through the afk relay (in-process for Claude and Codex, a proxy for other agents); the relay mirrors traffic to the afk hub over a unix socket; the hub keeps SQLite history, reads Zed's sidebar and serves HTTP + SSE on :47321, reached by the phone over Wi-Fi or Tailscale HTTPS :8443; push notifications go through Expo to FCM/APNs." src="../assets/readme/architecture-light.svg" width="820">
+  </picture>
+</p>
 
 ## Install
 

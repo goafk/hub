@@ -70,7 +70,21 @@ if [ -n "$SOURCE_DIR" ]; then
 else
   URL="${AFK_TARBALL:-${ACP_SYNC_TARBALL:-$TARBALL_DEFAULT}}"
   TGZ="$(mktemp)"
-  curl -fsSL "$URL" -o "$TGZ" || die "could not download $URL (is the repository public?)"
+  if ! curl -fsSL "$URL" -o "$TGZ" 2>/dev/null; then
+    # Private repository: fetch it with your own GitHub access instead (SSH key, or `gh auth login`).
+    CLONE="$(mktemp -d)"
+    if [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v git >/dev/null 2>&1 \
+      && GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new" git clone -q --depth 1 git@github.com:goafk/afk.git "$CLONE/afk-main" 2>/dev/null; then
+      tar -czf "$TGZ" -C "$CLONE" --exclude .git afk-main
+      say "    (downloaded with your GitHub SSH key)"
+    elif [ -z "${AFK_TARBALL:-${ACP_SYNC_TARBALL:-}}" ] && command -v gh >/dev/null 2>&1 && gh api repos/goafk/afk/tarball/main > "$TGZ" 2>/dev/null; then
+      say "    (downloaded with your GitHub login)"
+    else
+      rm -rf "$CLONE"
+      die "could not download $URL — the repository is private: add your SSH key to GitHub (or run 'gh auth login'), then try again"
+    fi
+    rm -rf "$CLONE"
+  fi
   tar -xzf "$TGZ" -C "$NEW" --strip-components=1 --exclude '*/app' --exclude '*/test' || die "the download is not a valid archive: $URL"
   rm -f "$TGZ"
 fi

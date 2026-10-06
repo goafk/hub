@@ -3,6 +3,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Entry, Thread } from "./interpreter.ts";
+import { writePrivate } from "../privateFile.ts";
 import type { Progress } from "./notify.ts";
 
 // ---- live progress ----
@@ -145,7 +146,7 @@ export class UsageLedger {
     // Keep 60 days of history.
     const keep = new Set(Array.from({ length: 60 }, (_, i) => dayKey(Date.now() - i * 86_400_000)));
     for (const k of Object.keys(this.data.days)) if (!keep.has(k)) delete this.data.days[k];
-    fs.writeFileSync(this.file, JSON.stringify(this.data));
+    writePrivate(this.file, JSON.stringify(this.data));
     this.dirty = false;
   }
 }

@@ -2,6 +2,7 @@
 // state lives in Zed's database, which Zed keeps in memory, so we don't write to it.)
 import fs from "node:fs";
 import path from "node:path";
+import { writePrivate } from "../privateFile.ts";
 
 export type ThreadMeta = { title?: string; archived?: boolean; autoApprove?: boolean; /** Started from the phone without Zed: not in Zed's sidebar. */ phoneOnly?: boolean };
 
@@ -30,8 +31,7 @@ export class MetaStore {
     if (patch.phoneOnly !== undefined) next.phoneOnly = !!patch.phoneOnly || undefined;
     if (Object.values(next).every((v) => v === undefined)) delete this.data[id];
     else this.data[id] = next;
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2));
+    writePrivate(this.file, JSON.stringify(this.data, null, 2));
     return next;
   }
 }

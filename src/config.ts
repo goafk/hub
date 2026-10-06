@@ -42,4 +42,5 @@ export function loadConfig(file = paths().config): Config {
 export function saveConfig(cfg: Config, file = paths().config): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n", { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
 }

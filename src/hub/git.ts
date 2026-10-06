@@ -8,7 +8,8 @@ export type GitStatus = { branch: string; ahead: number; behind: number; upstrea
 
 function git(cwd: string, args: string[], timeout = 20000): Promise<string> {
   return new Promise((resolve, reject) =>
-    execFile("git", args, { cwd, timeout, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) =>
+    // Never run a repo's fsmonitor command (an agent could plant one in .git/config).
+    execFile("git", ["-c", "core.fsmonitor=false", ...args], { cwd, timeout, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) =>
       err ? reject(Object.assign(new Error((stderr || err.message).trim()), { code: "git_error" })) : resolve(stdout),
     ),
   );
@@ -61,7 +62,7 @@ export async function status(cwd: string): Promise<GitStatus> {
 
 function countLines(file: string): number {
   try {
-    const st = fs.statSync(file);
+    const st = fs.lstatSync(file);
     if (!st.isFile() || st.size > 2_000_000) return 0;
     const text = fs.readFileSync(file, "utf8");
     return text ? text.split("\n").length - (text.endsWith("\n") ? 1 : 0) : 0;
@@ -77,7 +78,9 @@ export async function diff(cwd: string, file: string): Promise<string> {
   if (tracked) return git(cwd, ["diff", "HEAD", "--no-color", "--", file]);
   // Untracked: show as an all-new file.
   const abs = path.join(cwd, file);
-  const st = fs.statSync(abs);
+  const st = fs.lstatSync(abs);
+  // Don't follow links: an untracked link could point anywhere on the Mac.
+  if (st.isSymbolicLink()) return `--- /dev/null\n+++ b/${file}\n(new symlink → ${fs.readlinkSync(abs)})\n`;
   if (st.size > 2_000_000) return `--- /dev/null\n+++ b/${file}\n(new file, ${st.size} bytes — too large to show)\n`;
   const text = fs.readFileSync(abs, "utf8");
   if (text.includes("\0")) return `--- /dev/null\n+++ b/${file}\n(new binary file)\n`;

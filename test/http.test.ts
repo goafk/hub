@@ -20,8 +20,10 @@ async function setup(opts: { loopback?: boolean; run?: (c: string, a: string[]) 
   const pending = new PendingLaunches(path.join(fs.mkdtempSync(path.join(os.tmpdir(), "acp-pend-")), "pending.json"));
   const api = await startHttp(hub, { host: "127.0.0.1", port: 0, cfg: () => CFG, launcher, pairing, pending, isLoopback: () => opts.loopback ?? true });
   const base = `http://127.0.0.1:${api.port}`;
+  // Callers authenticate with the master token unless they pass their own headers (or loopback: false).
+  const auth: Record<string, string> = opts.loopback === false ? {} : { authorization: `Bearer ${CFG.token}` };
   const call = async (method: string, path: string, body?: any, headers: Record<string, string> = {}) => {
-    const r = await fetch(base + path, { method, headers: { "content-type": "application/json", ...headers }, body: body ? JSON.stringify(body) : undefined });
+    const r = await fetch(base + path, { method, headers: { "content-type": "application/json", ...auth, ...headers }, body: body ? JSON.stringify(body) : undefined });
     return { status: r.status, json: await r.json() };
   };
   return { hub, home, api, base, call, pairing, pending, close: async () => { await api.close(); await hub.stop(); } };
@@ -200,7 +202,7 @@ test("SSE streams events for a thread", async () => {
     const sid = await zed.open("/tmp");
     await until(() => !!s.hub.interpreter.threads.get(sid)?.conn);
     const got: string[] = [];
-    const req = http.get(`${s.base}/events?thread=${sid}`, (res) => {
+    const req = http.get(`${s.base}/events?thread=${sid}&token=secret`, (res) => {
       res.setEncoding("utf8");
       res.on("data", (d: string) => got.push(d));
     });
@@ -228,12 +230,15 @@ test("token required off-loopback", async () => {
   }
 });
 
-test("requests relayed by a local proxy (tailscale serve) need the token even from loopback", async () => {
+test("every request needs the token, also from this Mac (a web page could otherwise drive the hub)", async () => {
   const s = await setup({ loopback: true });
   try {
     assert.equal((await s.call("GET", "/threads")).status, 200);
-    assert.equal((await s.call("GET", "/threads", undefined, { "x-forwarded-for": "100.64.0.9" })).status, 401);
-    assert.equal((await s.call("GET", "/threads", undefined, { "tailscale-user-login": "me@x" })).status, 401);
+    assert.equal((await s.call("GET", "/threads", undefined, { authorization: "" })).status, 401);
+    // A cross-site "simple" request: text/plain body, no token.
+    const r = await fetch(s.base + "/threads", { method: "POST", headers: { "content-type": "text/plain" }, body: JSON.stringify({ cwd: "/", agentId: "fake", mode: "phone" }) });
+    assert.equal(r.status, 401);
+    assert.equal((await s.call("GET", "/threads", undefined, { authorization: "Bearer wrong" })).status, 401);
     assert.equal((await s.call("GET", "/threads", undefined, { "x-forwarded-for": "100.64.0.9", authorization: "Bearer secret" })).status, 200);
   } finally {
     await s.close();
@@ -330,9 +335,15 @@ test("new thread: a locked Mac screen is reported right away, without pressing k
   }
 });
 
-test("new thread when locked: queue it for unlock, then cancel it", async () => {
+test("new thread when locked: queue it for unlock, then cancel it; only in known project folders", async () => {
   const s = await setup({ locked: true });
+  const zed = new FakeZed(s.home.sock);
   try {
+    // An arbitrary folder is refused; a folder with a thread in it (known to Zed) is fine.
+    assert.equal((await s.call("POST", "/threads", { cwd: "/", agentId: "fake", mode: "when_unlocked" })).status, 400);
+    assert.equal((await s.call("POST", "/threads", { cwd: "/", agentId: "fake", mode: "phone" })).status, 400);
+    const sid = await zed.open(os.tmpdir());
+    await until(() => !!s.hub.interpreter.threads.get(sid));
     const q = await s.call("POST", "/threads", { cwd: os.tmpdir(), agentId: "fake", prompt: "later please", mode: "when_unlocked" });
     assert.equal(q.status, 202);
     assert.equal(q.json.queued.prompt, "later please");
@@ -341,6 +352,7 @@ test("new thread when locked: queue it for unlock, then cancel it", async () => 
     assert.equal((await s.call("POST", `/threads/pending/${q.json.queued.id}/cancel`)).status, 200);
     assert.equal(s.pending.list().length, 0);
   } finally {
+    zed.kill();
     await s.close();
   }
 });

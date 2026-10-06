@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 // REST + Server-Sent Events API over the hub.
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -27,6 +28,13 @@ import type { MetaStore } from "./meta.ts";
 const STATUS: Record<string, number> = {
   not_found: 404, busy: 409, outdated: 409, git_error: 422, offline: 409, invalid: 400, timeout: 504, agent_error: 502, unauthorized: 401, launch_failed: 500, locked: 409,
 };
+
+/** Constant-time comparison for secrets. */
+function sameSecret(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b ?? "");
+  return x.length === y.length && x.length > 0 && crypto.timingSafeEqual(x, y);
+}
 
 export const isLoopback = (addr?: string) => !!addr && (addr === "127.0.0.1" || addr === "::1" || addr === "::ffff:127.0.0.1");
 
@@ -141,6 +149,7 @@ export function startHttp(
   },
 ): Promise<{ port: number; close: () => Promise<void> }> {
   const loopback = opts.isLoopback ?? isLoopback;
+  let sseClients = 0;
   const pairing = opts.pairing ?? new Pairing(paths().home);
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
@@ -165,13 +174,17 @@ export function startHttp(
       // Pairing: a one-time code from `afk setup` / `afk pair` buys this phone its own key.
       if (m === "POST" && url.pathname === "/pair") {
         const b = await body(req);
-        const r = pairing.redeem(String(b.code ?? ""), String(b.name ?? "Phone"));
+        // Rate-limit per sender. Behind a local proxy (Tailscale Serve) the sender is in its header.
+        const who = proxied && loopback(req.socket.remoteAddress) ? String(req.headers["x-forwarded-for"] ?? req.headers["tailscale-user-login"] ?? "proxy").split(",")[0].trim() : req.socket.remoteAddress ?? "";
+        const r = pairing.redeem(String(b.code ?? ""), String(b.name ?? "Phone"), Date.now(), who);
         if (!r) throw new HubError("unauthorized", "pairing code is wrong or expired — run `afk pair` for a new one");
         return send(200, { key: r.key, client: r.client, hub: hubInfo(opts.cfg()) });
       }
-      if (proxied || !loopback(req.socket.remoteAddress)) {
+      // Every request needs the token or a paired phone's key, also from this Mac: otherwise any
+      // web page open in a browser here could drive the hub (and the agents) through localhost.
+      {
         const token = (req.headers.authorization ?? "").replace(/^Bearer /, "") || url.searchParams.get("token") || "";
-        if (token !== opts.cfg().token && !pairing.verify(token)) throw new HubError("unauthorized", "missing or bad token");
+        if (!sameSecret(token, opts.cfg().token) && !pairing.verify(token)) throw new HubError("unauthorized", "missing or bad token");
       }
 
       if (m === "GET" && url.pathname === "/info") return send(200, hubInfo(opts.cfg()));
@@ -226,7 +239,12 @@ export function startHttp(
         if (!knownProject(hub, opts.zed, cwd)) throw new HubError("invalid", "not a known project folder");
         return send(200, { files: searchFiles(cwd, url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 40)) });
       }
-      if (m === "GET" && url.pathname === "/events") return sse(hub, req, res, url.searchParams.get("thread"));
+      if (m === "GET" && url.pathname === "/events") {
+        if (sseClients >= 32) throw new HubError("busy", "too many live connections");
+        sseClients++;
+        res.on("close", () => sseClients--);
+        return sse(hub, req, res, url.searchParams.get("thread"));
+      }
       if (m === "GET" && url.pathname === "/search") {
         const threads = [...hub.interpreter.threads.values()].sort((a, b) => b.updatedAt - a.updatedAt);
         const hits = searchEntries(hub.interpreter.entries, threads.map((t) => t.id), url.searchParams.get("q") ?? "", Number(url.searchParams.get("limit") ?? 40));
@@ -327,9 +345,13 @@ export function startHttp(
         if (parts.length === 1 && m === "POST") {
           const b = await body(req);
           // "when_unlocked": the Mac is locked, so keep the request and start it in Zed on unlock.
+          if (b.mode === "when_unlocked" || b.mode === "phone") {
+            // Only folders Zed already knows (a project in its sidebar), never an arbitrary path.
+            if (!b.cwd || !fs.existsSync(b.cwd) || !fs.statSync(b.cwd).isDirectory()) throw new HubError("invalid", `not a directory: ${b.cwd}`);
+            if (!knownProject(hub, opts.zed, b.cwd)) throw new HubError("invalid", "not a project Zed knows — open it in Zed once first");
+          }
           if (b.mode === "when_unlocked") {
             if (!opts.pending) throw new HubError("not_found", "waiting threads are not enabled");
-            if (!b.cwd || !fs.existsSync(b.cwd)) throw new HubError("invalid", `not a directory: ${b.cwd}`);
             if (!opts.cfg().bindings[b.agentId]) throw new HubError("invalid", `agent ${b.agentId} is not set up (run: afk setup)`);
             return send(202, { queued: opts.pending.add({ cwd: b.cwd, agentId: b.agentId, prompt: b.prompt }) });
           }

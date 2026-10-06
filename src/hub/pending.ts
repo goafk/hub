@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { writePrivate } from "../privateFile.ts";
 
 export type PendingLaunch = { id: string; cwd: string; agentId: string; prompt?: string; createdAt: number; tries: number };
 
@@ -51,7 +52,6 @@ export class PendingLaunches {
   }
 
   private save(): void {
-    fs.mkdirSync(path.dirname(this.file), { recursive: true });
-    fs.writeFileSync(this.file, JSON.stringify(this.items, null, 2));
+    writePrivate(this.file, JSON.stringify(this.items, null, 2));
   }
 }

@@ -8,13 +8,14 @@ import { paths, zedSupportDir } from "../paths.ts";
 import { ZedReader } from "./zed.ts";
 import { ProgressThrottle, UsageLedger, progressOf } from "./extras.ts";
 import { PendingLaunches } from "./pending.ts";
+import { lockDown } from "../privateFile.ts";
 import { Hub } from "./hub.ts";
 import { hubInfo, startHttp } from "./http.ts";
 import { Launcher } from "./launcher.ts";
 
 export async function runHub(): Promise<void> {
   const p = paths();
-  fs.mkdirSync(p.home, { recursive: true });
+  lockDown(p.home);
   const cfg = loadConfig();
   const hub = new Hub({ sock: p.sock, dbFile: p.db });
   await hub.start();

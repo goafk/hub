@@ -27,6 +27,8 @@ export function keystrokeScript(keys: string): string[] {
   return keys.split(" ").filter(Boolean).flatMap((stroke) => {
     const parts = stroke.split("-");
     const key = parts.pop()!;
+    // Goes into an AppleScript string: one plain letter or digit only.
+    if (!/^[A-Za-z0-9]$/.test(key)) throw new HubError("invalid", `bad shortcut key "${key}" in config`);
     const mods = parts.map((p) => MODS[p]).filter(Boolean);
     const using = mods.length ? ` using {${mods.join(", ")}}` : "";
     return [`tell application "System Events" to keystroke "${key}"${using}`, "delay 0.15"];

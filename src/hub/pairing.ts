@@ -32,7 +32,8 @@ export class Pairing {
   private codesFile: string;
   private clientsFile: string;
   private cache: { mtime: number; clients: Client[] } | null = null;
-  private failures: number[] = [];
+  /** Bad codes per sender (address), so one noisy device can't lock everyone else out. */
+  private failures = new Map<string, number[]>();
 
   constructor(home: string) {
     this.codesFile = path.join(home, "pairing-codes.json");
@@ -50,15 +51,17 @@ export class Pairing {
   }
 
   /** Trades a valid code for a new client key (returned once, stored hashed). */
-  redeem(code: string, name: string, now = Date.now()): { client: Omit<Client, "keyHash">; key: string } | null {
-    // Brute-force guard: at most 10 bad codes per 10 minutes.
-    this.failures = this.failures.filter((t) => now - t < 10 * 60_000);
-    if (this.failures.length >= 10) return null;
+  redeem(code: string, name: string, now = Date.now(), from = ""): { client: Omit<Client, "keyHash">; key: string } | null {
+    // Brute-force guard: at most 10 bad codes per 10 minutes from one sender.
+    const recent = (this.failures.get(from) ?? []).filter((t) => now - t < 10 * 60_000);
+    this.failures.set(from, recent);
+    if (recent.length >= 10) return null;
+    if (this.failures.size > 1000) for (const [k, v] of this.failures) if (!v.length) this.failures.delete(k);
     const codes = readJson<Code[]>(this.codesFile, []).filter((c) => c.expiresAt > now);
     const want = String(code).trim().toUpperCase();
     const hit = codes.find((c) => c.code.length === want.length && crypto.timingSafeEqual(Buffer.from(c.code), Buffer.from(want)));
     if (!hit) {
-      this.failures.push(now);
+      recent.push(now);
       return null;
     }
     writeJson(this.codesFile, codes.filter((c) => c !== hit));

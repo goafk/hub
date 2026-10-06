@@ -16,7 +16,9 @@
 </p>
 
 <p align="center">
-  <a href="https://goafk.dev"><img alt="afk: Zed's agent panel on your phone" src="https://goafk.dev/assets/og.png" width="760"></a>
+  <a href="https://goafk.dev/#film"><img alt="afk in 12 seconds: Zed's agent asks for permission, your phone buzzes, you tap Allow, and every thread is in your pocket" src="https://goafk.dev/assets/film/afk-film.gif" width="760"></a>
+  <br>
+  <sub><a href="https://goafk.dev/#film">▶ Watch the full 35-second film, with sound</a></sub>
 </p>
 
 ---

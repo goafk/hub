@@ -97,6 +97,8 @@ export class Hub extends EventEmitter {
           this.conns.set(conn.id, conn);
           this.emit("event", { type: "agent.connected", threadId: "", data: { conn: conn.id, agentId: conn.agentId, name: conn.name, pid: conn.pid } });
           for (const w of this.adoptWatchers) w(conn);
+          // Lets a new agent process go ahead with Zed's first new thread (it waits for this, briefly).
+          if ((conn.commands ?? []).includes("welcome")) this.sendToConn(conn.id, { cmd: "welcome" }).catch(() => {});
         }
         this.interpreter.attach(conn.id, conn.agentId, m.sessions ?? []);
       } else if (m.type === "acp" && hello) {

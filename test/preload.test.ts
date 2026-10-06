@@ -140,8 +140,8 @@ test("adopt: also works when Zed starts a new agent process for the window (it c
     let opened: string | undefined;
     await hub.adopt(t.id, async () => {
       // Zed opens a new window: a second agent process, which handles the new thread.
+      // Like real Zed: it asks the brand-new process for a session right away.
       zed2 = new FakeZed(home.sock, {}, true);
-      await until(() => hub.agents()[0].connections === 2);
       opened = await zed2.open(dir);
     });
     assert.equal(opened, t.id);

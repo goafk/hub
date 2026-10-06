@@ -32,7 +32,7 @@ export function optionValues(opt: any): string[] {
 }
 
 /** Commands this relay build understands (the hub checks before sending). */
-export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify", "hub-session", "adopt"];
+export const PROXY_COMMANDS = ["prompt", "prompt:content", "config", "cancel", "permission", "elicitation", "rpc", "notify", "hub-session", "adopt", "welcome"];
 
 export function createRelay(opts: RelayOpts): Relay {
   const timeout = opts.rpcTimeoutMs ?? 30000;
@@ -52,6 +52,22 @@ export function createRelay(opts: RelayOpts): Relay {
   // Zed's session/new for that folder by loading the phone thread instead (the agent replays it).
   const adoptions = new Map<string, { sessionId: string; resolve: (v: unknown) => void; reject: (e: unknown) => void; timer: NodeJS.Timeout }>();
   const norm = (p: string) => (p ?? "").replace(/\/+$/, "");
+  // A new agent process gets Zed's first session/new right away, often before the hub has had a
+  // chance to say "adopt this folder". Hold that first one until the hub's welcome (max 1.5s).
+  const bornAt = Date.now();
+  let welcomed = false;
+  const welcomeWaiters: Array<() => void> = [];
+  const whenWelcomed = (fn: () => void) => {
+    if (welcomed || Date.now() - bornAt > 10_000) return fn();
+    let ran = false;
+    const go = () => {
+      if (ran) return;
+      ran = true;
+      fn();
+    };
+    welcomeWaiters.push(go);
+    setTimeout(go, 1500).unref();
+  };
   let seq = 0;
 
   // Outbound-to-Zed queue so we can hold messages while rewriting a session/new response.
@@ -256,6 +272,12 @@ export function createRelay(opts: RelayOpts): Relay {
       }
       case "hub-session":
         return { ok: true };
+      case "welcome": {
+        // The hub has sent anything pending (adoptions) for this new process.
+        welcomed = true;
+        for (const w of welcomeWaiters.splice(0)) w();
+        return { ok: true };
+      }
       case "adopt": {
         // Resolves once Zed's next new thread in this folder has become the phone thread.
         const cwd = norm(cmd.cwd);
@@ -320,6 +342,9 @@ export function createRelay(opts: RelayOpts): Relay {
   function fromZedLine(line: string): void {
     const m = tryParse(line);
     if (!m) return opts.writeAgent(line);
+    if (m.method === "session/new" && m.id !== undefined && !welcomed && Date.now() - bornAt <= 10_000) {
+      return whenWelcomed(() => fromZedLine(line));
+    }
     if (m.method === "session/new" && m.id !== undefined && adoptions.has(norm(m.params?.cwd))) {
       const a = adoptions.get(norm(m.params?.cwd))!;
       adoptions.delete(norm(m.params?.cwd));

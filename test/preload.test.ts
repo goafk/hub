@@ -124,3 +124,30 @@ test("adopt: a phone-only thread becomes Zed's next new thread in its folder, wi
     await hub.stop();
   }
 });
+
+test("adopt: also works when Zed starts a new agent process for the window (it connects after the request)", async () => {
+  const fs = await import("node:fs");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const { hub, home } = await startHub();
+  const zed = new FakeZed(home.sock, {}, true);
+  let zed2: FakeZed | undefined;
+  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), "afk-adopt2-")));
+  try {
+    await zed.open("/proj");
+    await until(() => hub.agents().length === 1);
+    const t = await hub.startHeadless("fake", dir);
+    let opened: string | undefined;
+    await hub.adopt(t.id, async () => {
+      // Zed opens a new window: a second agent process, which handles the new thread.
+      zed2 = new FakeZed(home.sock, {}, true);
+      await until(() => hub.agents()[0].connections === 2);
+      opened = await zed2.open(dir);
+    });
+    assert.equal(opened, t.id);
+  } finally {
+    zed.kill();
+    zed2?.kill();
+    await hub.stop();
+  }
+});

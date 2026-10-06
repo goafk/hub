@@ -32,6 +32,8 @@ export class Hub extends EventEmitter {
   interpreter: Interpreter;
   queue: PromptQueue;
   conns = new Map<string, Conn>();
+  /** Pending adoptions also go to agent processes that connect meanwhile (Zed starts one per new window). */
+  private adoptWatchers = new Set<(c: Conn) => void>();
   private server: net.Server | null = null;
   private store: Store;
   private sock: string;
@@ -94,6 +96,7 @@ export class Hub extends EventEmitter {
           hello = true;
           this.conns.set(conn.id, conn);
           this.emit("event", { type: "agent.connected", threadId: "", data: { conn: conn.id, agentId: conn.agentId, name: conn.name, pid: conn.pid } });
+          for (const w of this.adoptWatchers) w(conn);
         }
         this.interpreter.attach(conn.id, conn.agentId, m.sessions ?? []);
       } else if (m.type === "acp" && hello) {
@@ -198,23 +201,53 @@ export class Hub extends EventEmitter {
    */
   async adopt(threadId: string, openInZed: () => Promise<void>, timeoutMs = 60000): Promise<void> {
     const t = this.thread(threadId);
-    const procs = [...this.conns.values()].filter((c) => c.agentId === t.agentId && (c.commands ?? []).includes("adopt"));
+    const canAdopt = (c: Conn) => c.agentId === t.agentId && (c.commands ?? []).includes("adopt");
+    const procs = [...this.conns.values()].filter(canAdopt);
     if (!procs.length) throw new HubError("outdated", "Quit and reopen Zed once so its agents pick up afk's update.");
     // Zed reports the folder it opened by its real path.
     let cwd = t.cwd;
     try {
       cwd = fs.realpathSync(t.cwd);
     } catch {}
-    const waits = procs.map((c) => this.sendToConn(c.id, { cmd: "adopt", sessionId: t.id, cwd, timeoutMs }, timeoutMs + 5000));
-    waits.forEach((w) => w.catch(() => {}));
-    try {
-      await openInZed();
-      await Promise.any(waits);
-    } catch (e: any) {
-      throw e instanceof AggregateError ? e.errors[0] : e;
-    } finally {
-      for (const c of procs) this.sendToConn(c.id, { cmd: "adopt-cancel", cwd }).catch(() => {});
-    }
+    return new Promise<void>((resolve, reject) => {
+      let done = false;
+      let adopted = false;
+      let opened = false;
+      const asked = new Set<string>();
+      const finish = (err?: unknown) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        this.adoptWatchers.delete(onConn);
+        for (const id of asked) this.sendToConn(id, { cmd: "adopt-cancel", cwd }).catch(() => {});
+        if (err) reject(err);
+        else resolve();
+      };
+      const ask = (c: Conn) => {
+        if (asked.has(c.id)) return;
+        asked.add(c.id);
+        this.sendToConn(c.id, { cmd: "adopt", sessionId: t.id, cwd, timeoutMs }, timeoutMs + 5000).then(
+          () => {
+            adopted = true;
+            if (opened) finish();
+          },
+          () => {},
+        );
+      };
+      const onConn = (c: Conn) => {
+        if (canAdopt(c)) ask(c);
+      };
+      const timer = setTimeout(() => finish(new HubError("timeout", "Zed didn't open a new thread in time")), timeoutMs);
+      this.adoptWatchers.add(onConn);
+      procs.forEach(ask);
+      openInZed().then(
+        () => {
+          opened = true;
+          if (adopted) finish();
+        },
+        (e) => finish(e),
+      );
+    });
   }
 
   agents(): Array<{ agentId: string; name: string; connections: number }> {

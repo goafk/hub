@@ -65,7 +65,7 @@ export async function runHub(): Promise<void> {
   };
   setInterval(async () => {
     if (adopting) return;
-    const waiting = [...hub.interpreter.threads.values()].filter((t) => meta.get(t.id).phoneOnly && t.status === "idle" && (adoptTries.get(t.id) ?? 0) < 3);
+    const waiting = [...hub.interpreter.threads.values()].filter((t) => meta.get(t.id).phoneOnly && !meta.get(t.id).archived && t.status === "idle" && (adoptTries.get(t.id) ?? 0) < 3);
     if (!waiting.length || (await launcher.locked()) || (await launcher.idleSeconds()) < 120) return;
     adopting = true;
     try {

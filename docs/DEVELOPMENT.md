@@ -104,6 +104,7 @@ for HTTPS anywhere on your tailnet.
 | POST | `/zed/threads/:id/resume` | load a thread into a running agent so it can be continued without Zed |
 | POST | `/zed/threads/:id/meta` | `{title?, archived?, autoApprove?}` — app-side rename / archive / approve-everything |
 | POST | `/threads/:id/seen` | clear the thread's unread mark (inbox) |
+| POST | `/threads/seen` | `{ids}`: clear several threads' unread marks at once (Mark all as read) |
 | POST | `/threads/:id/elicitation` | `{requestId?, action, content}` — answer an agent question |
 | GET | `/files?cwd=&q=` | fuzzy file search for @-mentions (known projects only) |
 | GET | `/git/status?cwd=` · `/git/diff?cwd=&file=` | review changes |

@@ -272,6 +272,13 @@ export function startHttp(
         return send(200, { ...totals, threads });
       }
       if (m === "GET" && url.pathname === "/zed/theme") return send(200, readZedTheme(zedConfigDir(), zedSupportDir()));
+      if (m === "POST" && url.pathname === "/threads/seen") {
+        // Mark all as read: one call for the whole inbox.
+        const b = await body(req);
+        if (!Array.isArray(b.ids)) throw new HubError("invalid", "ids must be an array");
+        for (const id of b.ids) hub.interpreter.markSeen(String(id));
+        return send(200, { ok: true });
+      }
       if (m === "GET" && url.pathname === "/zed/sidebar") {
         if (!opts.zed?.available()) throw new HubError("not_found", "Zed database not found");
         const cfg = opts.cfg();

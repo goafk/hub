@@ -39,6 +39,8 @@ export class Notifier {
   private file: string;
   /** This Mac's id and name, sent with every notification so a tap opens the right Mac in the app. */
   hub: () => { id: string; name: string } = () => ({ id: "", name: "" });
+  /** How many threads need you (counting `include`, the one being notified about); -1 when unknown. */
+  needs: (include?: string) => number = () => -1;
   private post: Post;
   private devices: Device[];
 
@@ -144,6 +146,9 @@ export class Notifier {
     if (!targets.length) return;
     const title = `${path.basename(thread.cwd)} · ${thread.title ?? "Thread"}`;
     const hub = this.hub();
+    // The app icon's badge (iOS). Phones paired with several Macs get theirs from the app instead:
+    // one Mac's count would be wrong there.
+    const badge = this.needs(thread.id);
     const messages = targets.map((x) => ({
       to: x.token,
       title: x.showHub && hub.name ? `${hub.name} · ${title}` : title,
@@ -152,6 +157,7 @@ export class Notifier {
       priority: "high",
       channelId: kind === "input" ? "input" : "default",
       ...(categoryId ? { categoryId } : {}),
+      ...(badge >= 0 && !x.showHub ? { badge } : {}),
       data: { threadId: thread.id, hubId: hub.id, url: `zedthreads://thread/${thread.id}`, ...action },
     }));
     await this.send(messages);

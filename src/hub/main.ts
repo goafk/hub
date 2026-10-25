@@ -10,7 +10,7 @@ import { ProgressThrottle, UsageLedger, progressOf } from "./extras.ts";
 import { PendingLaunches } from "./pending.ts";
 import { lockDown } from "../privateFile.ts";
 import { Hub } from "./hub.ts";
-import { hubInfo, startHttp } from "./http.ts";
+import { hubInfo, isUnread, startHttp } from "./http.ts";
 import { Launcher } from "./launcher.ts";
 
 export async function runHub(): Promise<void> {
@@ -24,6 +24,14 @@ export async function runHub(): Promise<void> {
   const notifier = new Notifier(path.join(p.home, "devices.json"));
   notifier.hub = () => hubInfo(loadConfig());
   const meta = new MetaStore(path.join(p.home, "thread-meta.json"));
+  notifier.needs = (include) => {
+    let n = 0;
+    for (const t of hub.interpreter.threads.values()) {
+      if (meta.get(t.id).archived) continue;
+      if (t.id === include || isUnread(t) || t.pendingPermissions.length) n++;
+    }
+    return n;
+  };
   const usage = new UsageLedger(path.join(p.home, "usage.json"));
   for (const t of hub.interpreter.threads.values()) if (t.usage?.cost?.amount !== undefined) usage.seed(t.id, Number(t.usage.cost.amount));
   setInterval(() => usage.flush(), 30_000).unref();
